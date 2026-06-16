@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+@theme {
+  --breakpoint-xs: 350px;
+
+  /* ============================================
+     PRIMARY — Deep Indigo
+     ============================================ */
+  --color-primary:       #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-light: #eef0ff;
+  --color-primary-muted: #c7d2fe;
+
+  /* ============================================
+     ACCENT — Saffron (Gujarat feel)
+     ============================================ */
+  --color-accent:       #f59e0b;
+  --color-accent-hover: #d97706;
+  --color-accent-light: #fef3c7;
+
+  /* ============================================
+     TEXT
+     ============================================ */
+  --color-text-primary:   #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted:     #94a3b8;
+  --color-text-inverse:   #ffffff;
+  --color-text-brand:     #4f46e5;
+  --color-text-accent:    #d97706;
+
+  /* ============================================
+     BACKGROUND
+     ============================================ */
+  --color-bg-page:     #f1f5f9;
+  --color-bg-surface:  #ffffff;
+  --color-bg-elevated: #ffffff;
+
+  /* ============================================
+     BORDER
+     ============================================ */
+  --color-border:        #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-border-brand:  #4f46e5;
+
+  /* ============================================
+     SEMANTIC
+     ============================================ */
+  --color-success:      #22c55e;
+  --color-success-light:#dcfce7;
+  --color-success-text: #166534;
+
+  --color-error:        #ef4444;
+  --color-error-light:  #fee2e2;
+  --color-error-text:   #991b1b;
+
+  --color-warning:      #f59e0b;
+  --color-warning-light:#fef3c7;
+  --color-warning-text: #92400e;
+
+  /* ============================================
+     RADIUS
+     ============================================ */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  /* ============================================
+     SHADOW
+     ============================================ */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08);
+
+  /* ============================================
+     TRANSITION
+     ============================================ */
+  --transition-fast:   150ms ease;
+  --transition-normal: 250ms ease;
+
+  /* ============================================
+     NAVBAR
+     ============================================ */
+  --navbar-height: 64px;
+}
+
+/* ============================================
+   DARK MODE
+   ============================================ */
+.dark {
+  --color-text-primary:   #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted:     #475569;
+  --color-text-brand:     #818cf8;
+  --color-text-accent:    #fbbf24;
+
+  --color-bg-page:     #0b0f1a;
+  --color-bg-surface:  #111827;
+  --color-bg-elevated: #1a2235;
+
+  --color-border:        #1e293b;
+  --color-border-strong: #334155;
+
+  --color-primary-light: rgba(99, 102, 241, 0.15);
+  --color-accent-light:  rgba(245, 158, 11, 0.15);
+}
+
+/* ============================================
+   BASE RESET
+   ============================================ */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-bg-page);
+    color: var(--color-text-primary);
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--color-text-brand);
+    text-decoration: none;
+  }
+
+  /* ============================================
+     SCROLLBAR
+     ============================================ */
+  ::-webkit-scrollbar       { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: var(--radius-full);
+  }
+
+  /* ============================================
+     SELECTION
+     ============================================ */
+  ::selection {
+    background: var(--color-primary-muted);
+    color: #312e81;
+  }
+}
+
+/* ============================================
+   UTILITY — page offset for fixed navbar
+   ============================================ */
+@layer utilities {
+  .page-top {
+    padding-top: var(--navbar-height);
+  }
+}
