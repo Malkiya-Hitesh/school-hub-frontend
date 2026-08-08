@@ -2,17 +2,24 @@
 
 
 import { useState } from "react";
-import { GUJARAT_DISTRICTS } from "@/lib/constants";
+import { DISTRICT_OPTIONS } from "@/lib/constants";
 import { usePushQuery } from "@/hooks/usePushQuery";
+import { useSearchParams } from "next/navigation";
 
 
-let  POPULAR_DISTRICTS =  GUJARAT_DISTRICTS
-POPULAR_DISTRICTS.unshift("ALL")
+const POPULAR_DISTRICTS = [
+    { value: "ALL", label: "ALL" },
+    ...DISTRICT_OPTIONS,
+];
+
 
 function SchoolScearch() {
 
-    const [query, setQuery] = useState("");
-    const [district, setDistrict] = useState("");
+const searchParams = useSearchParams()
+     const q = searchParams.get('q') || ""
+     const districtQ = searchParams.get('district') || ""
+    const [query, setQuery] = useState(q || "");
+    const [district, setDistrict] = useState(districtQ  || "");
 
 
 
@@ -62,8 +69,8 @@ function SchoolScearch() {
                 aria-label="Select district"
                 className="hidden sm:block border-l border-slate-200 py-4 px-3 text-sm text-slate-500 bg-transparent outline-none cursor-pointer"
             >
-                {POPULAR_DISTRICTS.map((m) => (
-                    <option key={m} value={m=='ALL' ? 'ALL' : m}>{m}</option>
+                {POPULAR_DISTRICTS.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
                 ))}
             </select>
 

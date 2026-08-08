@@ -10,11 +10,10 @@ import { cn } from "@/lib/utils";
    ============================================================ */
 const NAV_LINKS = [
   { label: "હોમ",          href: "/"              },
-  { label: "શાળા શોધો",    href: "/schools"       },
-  { label: "જિલ્લા",       href: "/districts"     },
-  { label: "સરખામણી",      href: "/compare"       },
-  { label: "અમારા વિશે",   href: "/about"         },
-  { label: "dashboard",   href: "/auth/login"         },
+
+  { label: "login",   href: "/login"         },
+
+  { label: "school login",   href: "/auth/login"         },
 ];
 
 /* ============================================================

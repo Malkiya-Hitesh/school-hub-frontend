@@ -8,7 +8,7 @@
  *   from network errors.
  * ─────────────────────────────────────────────────────────────
  */
-
+//  /src/lib/schoolApi.js
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:5000/api";
 
@@ -65,17 +65,17 @@ export function fetchSchoolById(schoolId) {
   return apiFetch(`/schools/by-id/${encodeURIComponent(schoolId)}`);
 }
 
-/* ── Nearby schools ─────────────────────────────────────── */
-/**
- * @param {{ lat: number, lng: number, radius?: number, limit?: number }}
- * @returns {Promise<School[]>}
- */
-export function fetchNearbySchools({ lat, lng, radius = 10, limit = 10 }) {
-  const qs = new URLSearchParams({
-    lat: String(lat),
-    lng: String(lng),
-    radius: String(radius),
-    limit: String(limit),
-  });
-  return apiFetch(`/schools/nearby?${qs}`);
-}
+// /* ── Nearby schools ─────────────────────────────────────── */
+// /**
+//  * @param {{ lat: number, lng: number, radius?: number, limit?: number }}
+//  * @returns {Promise<School[]>}
+//  */
+// export function fetchNearbySchools({ lat, lng, radius = 10, limit = 10 }) {
+//   const qs = new URLSearchParams({
+//     lat: String(lat),
+//     lng: String(lng),
+//     radius: String(radius),
+//     limit: String(limit),
+//   });
+//   return apiFetch(`/schools/nearby?${qs}`);
+// }

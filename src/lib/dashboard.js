@@ -1,13 +1,6 @@
-// lib/api/dashboard.js
-// Complete dashboardApi — matches all routes in routes/dashboard.js
-// Adjust the import path for axiosInstance to match your project
-
 import axiosInstance from "./axiosInstance";
 
- // e.g. lib/axios.js or lib/api/index.js
-
 export const dashboardApi = {
-
   // ── School ──────────────────────────────────────────────────
   getSchool:       ()   => axiosInstance.get("/dashboard/school"),
   getStats:        ()   => axiosInstance.get("/dashboard/stats"),
@@ -15,42 +8,41 @@ export const dashboardApi = {
 
   // ── Section patches ─────────────────────────────────────────
   updateBasics:    (d)  => axiosInstance.patch("/dashboard/school/basics",    d),
+  updateAbout:     (d)  => axiosInstance.patch("/dashboard/school/about",     d),
   updateAddress:   (d)  => axiosInstance.patch("/dashboard/school/address",   d),
   updateAcademics: (d)  => axiosInstance.patch("/dashboard/school/academics", d),
   updateCategory:  (d)  => axiosInstance.patch("/dashboard/school/category",  d),
+  updateAdmission: (d)  => axiosInstance.patch("/dashboard/school/admission", d),
   updateFees:      (d)  => axiosInstance.patch("/dashboard/school/fees",      d),
   updateContact:   (d)  => axiosInstance.patch("/dashboard/school/contact",   d),
 
-  // ── UDISE / Infrastructure (facility object) ─────────────────
-  // NOTE: add PATCH /dashboard/school/udise-facility to your backend (see below)
-  updateFacility:  (d)  => axiosInstance.patch("/dashboard/school/udise-facility", d),
-  getUdiseFacility: ()  => axiosInstance.get("/dashboard/school/udise-facility"),
+  // NOTE: removed updateFacility()/getUdiseFacility() — that "UDISE
+  // infrastructure" object (classrooms, toilets, electricity, computers…)
+  // doesn't exist anywhere in the final School schema, so there was no
+  // backend route/field for it to save to. Add it to the schema first if
+  // you want that data captured.
 
-  // ── Results ─────────────────────────────────────────────────
+  // ── Results (schema: classLabel/year/stream/board/medium/appeared/passed/passingRate/posterImageUrl) ──
   getResults:      ()       => axiosInstance.get("/dashboard/school/results"),
   addResult:       (d)      => axiosInstance.post("/dashboard/school/results", d),
   updateResult:    (id, d)  => axiosInstance.patch(`/dashboard/school/results/${id}`, d),
   deleteResult:    (id)     => axiosInstance.delete(`/dashboard/school/results/${id}`),
 
-  // ── Achievements ─────────────────────────────────────────────
+  // ── Achievements (schema: title/description/imgUrl/year) ─────
   getAchievements:    ()      => axiosInstance.get("/dashboard/school/achievements"),
- addAchievement: (d) => {
-  console.log("Adding achievement:", d);
-  return axiosInstance.post("/dashboard/school/achievements", d);
-},
+  addAchievement:     (d)     => axiosInstance.post("/dashboard/school/achievements", d),
   updateAchievement:  (id, d) => axiosInstance.patch(`/dashboard/school/achievements/${id}`, d),
   deleteAchievement:  (id)    => axiosInstance.delete(`/dashboard/school/achievements/${id}`),
 
-  // ── Facility Showcase (school-uploaded items, NOT UDISE) ─────
+  // ── Facility Showcase (schema: facilities → label/description/imageUrl) ──
   getFacilityItems:    ()      => axiosInstance.get("/dashboard/school/facilities"),
   addFacilityItem:     (d)     => axiosInstance.post("/dashboard/school/facilities", d),
   updateFacilityItem:  (id, d) => axiosInstance.patch(`/dashboard/school/facilities/${id}`, d),
   deleteFacilityItem:  (id)    => axiosInstance.delete(`/dashboard/school/facilities/${id}`),
 
-  // ── Social Links ─────────────────────────────────────────────
-  // The frontend sends { socialLinks: [...] } but backend expects { links: [...] }
-  // Transform happens inside updateSocial so sections don't need to know
-  getSocial: () => axiosInstance.get("/dashboard/school/social"),
-  updateSocial: ({ socialLinks }) =>
-    axiosInstance.put("/dashboard/school/social", { links: socialLinks }),
+  // ── Social Links (schema: social → flat object, no wrapper key) ──
+  // Backend validator reads req.body.facebook / .instagram / etc directly,
+  // so send the flat object as-is — no {links: [...]} transform.
+  getSocial:    ()  => axiosInstance.get("/dashboard/school/social"),
+  updateSocial: (d) => axiosInstance.put("/dashboard/school/social", d),
 };

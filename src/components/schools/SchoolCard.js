@@ -7,9 +7,12 @@
  *        map button
  * ─────────────────────────────────────────────────────────────
  */
+//   /src/components/schools/SchoolCard.js
 
+ 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BOARDS, DISTRICT_TALUKA, DISTRICTS, getLabel, LOCATION_TYPES, MANAGEMENTS, MEDIUMS, SCHOOL_TYPES } from "@/lib/constants";
 
 /* ── Management badge config ─────────────────────────────── */
 const MGMT_STYLES = {
@@ -105,18 +108,26 @@ export default function SchoolCard({ school }) {
   const logoImg        = school?.basics?.logoImg             ?? null;
   const phone          = school?.basics?.phone               ?? null;
   const village        = school?.address?.village            ?? "";
-  const taluka         = school?.address?.taluka             ?? "";
-  const district       = school?.address?.district           ?? "";
+  const taluka         = DISTRICT_TALUKA[school?.address?.district][school?.address?.taluka] 
+  let district       = DISTRICTS[school?.address?.district]    
+  
+  
+  let medium         = school?.academics?.medium        
+  let board          = school?.academics?.board  
+
+
+  medium= medium.map((m) => getLabel(MEDIUMS, m));
+
+ board = board.map((b) => getLabel(BOARDS, b));
   const mapsUrl        = school?.address?.googleMapsUrl      ?? null;
   const gradeFrom      = school?.academics?.gradeFrom;
   const gradeTo        = school?.academics?.gradeTo;
-  const medium         = school?.academics?.medium           ?? [];
-  const board          = school?.academics?.board            ?? [];
+   
   const totalStudents  = school?.academics?.totalStudents;
   const totalTeachers  = school?.academics?.totalTeachers;
-  const management     = school?.category?.management        ?? "";
-  const schoolType     = school?.category?.schoolType        ?? "";
-  const locationType   = school?.category?.locationType      ?? "";
+  const management     =  MANAGEMENTS[school?.category?.management]
+  const schoolType     = SCHOOL_TYPES[school?.category?.schoolType]
+  const locationType   = LOCATION_TYPES[school?.category?.locationType]
   const isVerified     = school?.isVerified                  ?? false;
   const isClaimed      = school?.isClaimed                   ?? false;
 

@@ -9,12 +9,14 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+
 // import { selectUser }          from "@/store/slices/userSlice";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+
 
 import { claimApi } from "@/lib/api";
+import { useSelector } from "react-redux";
 import { selectUser } from "../../../store/slices/userSlice";
+
 
 // ── Step indicator ────────────────────────────────────────────
 function StepBar({ current }) {
@@ -146,7 +148,8 @@ function Step1({ onFound }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
-
+   const user = useSelector(selectUser);
+let email = user?.email || "";
   const handleSearch = async () => {
     if (last5.length !== 5 || !/^\d{5}$/.test(last5)) {
       setError("Please enter exactly 5 digits.");
@@ -156,9 +159,11 @@ function Step1({ onFound }) {
     setLoading(true);
     setResult(null);
     try {
-      const { data, ok } = await claimApi.search(last5);
-      if (ok && data.success && data.school) {
-        setResult(data.school);
+      const { data, ok } = await claimApi.search(last5, email);
+      console.log(data);
+      
+      if ( data.success && data.data) {
+        setResult(data.data);
       } else {
         setError(data.message || "School not found. Check the UDISE code.");
       }
@@ -208,6 +213,7 @@ function Step1({ onFound }) {
 
       {/* Search result */}
       {result && (
+        result.map((school, index) => (
         <div style={{
           background: "#f0fdf4", border: "1px solid #bbf7d0",
           borderRadius: "12px", padding: "20px",
@@ -219,20 +225,21 @@ function Step1({ onFound }) {
             School Found
           </div>
           <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: "0 0 6px" }}>
-            {result.basics?.schoolName}
+            {school.basics?.schoolName}
           </h3>
           <p style={{ fontSize: "13px", color: "#475569", margin: "0 0 4px" }}>
-            📍 {[result.address?.village, result.address?.taluka, result.address?.district].filter(Boolean).join(", ")}
+            📍 {[school.address?.village, school.address?.taluka, school.address?.district].filter(Boolean).join(", ")}
           </p>
-          {result.basics?.email && (
+          {school.basics?.email && (
             <p style={{ fontSize: "13px", color: "#475569", margin: "0 0 16px" }}>
-              ✉ {result.basics.email}
+              ✉ {school.basics.email}
             </p>
           )}
-          <Btn onClick={() => onFound(result)}>
+          <Btn onClick={() => onFound(school)} style={{ width: "100%" }}>
             Claim This School →
           </Btn>
         </div>
+        ))
       )}
 
       <div style={{
@@ -266,6 +273,8 @@ function Step2({ school, onNext, onBack }) {
     setServerError("");
     setLoading(true);
     try {
+    
+      
       const payload = {
         schoolId: school._id,
         contactName: formData.name,
@@ -277,9 +286,10 @@ function Step2({ school, onNext, onBack }) {
       const { data, ok } = await claimApi.initiate(payload);
 
 
+      console.log(data.data);
       
       if (ok && data.success) {
-        onNext({ ...formData, claimId: data.claimId });
+        onNext({ ...formData, claimId: data?.data?.claimId });
       } else {
         setServerError(data.message || "Something went wrong.");
       }
@@ -448,6 +458,7 @@ function Step4({ school, details, onDone }) {
         claimId: details.claimId || "",
         documents: [],
       });
+      console.log(data.data);
       if (ok && data.success) {
         setSubmitted(true);
         setTimeout(() => onDone(), 2000);

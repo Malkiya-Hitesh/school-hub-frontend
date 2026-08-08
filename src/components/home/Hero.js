@@ -33,6 +33,8 @@ export default function HeroSection() {
 
  
 
+
+  
   return (
     <section    className={cn(   "w-full bg-[var(--color-primary)]",   "pt-28 pb-16 px-4 sm:px-6 lg:px-10",
       )}

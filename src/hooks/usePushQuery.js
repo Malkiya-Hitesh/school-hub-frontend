@@ -1,4 +1,6 @@
+//  /src/hooks/usePushQuery.js
 "use client";
+import { useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 /** Read the current value of a single query param */
@@ -21,7 +23,7 @@ export function usePushQuery() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  return (queries) => {
+  return useCallback((queries) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(queries).forEach(([key, value]) => {
       if (value === undefined || value === null || value === "") {
@@ -36,5 +38,5 @@ export function usePushQuery() {
       }
     });
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+  }, [router, pathname, searchParams]);
 }

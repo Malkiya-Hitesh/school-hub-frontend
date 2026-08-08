@@ -1,7 +1,5 @@
 "use client";
-// app/dashboard/school/page.js
-// Full school profile editor — ALL sections on ONE page
-// Route: /dashboard/school
+
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -13,82 +11,56 @@ import {
 
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { BOARDS, DISTRICTS, LOCATION_TYPES, MANAGEMENTS, MEDIUMS, SCHOOL_TYPES, STREAMS } from "@/lib/constants";
+import {
+  BOARD_OPTIONS,
+  DISTRICT_OPTIONS,
+  LOCATION_TYPE_OPTIONS,
+  MANAGEMENT_OPTIONS,
+  MEDIUM_OPTIONS,
+  SCHOOL_TYPE_OPTIONS,
+  STREAM_OPTIONS,
+} from "@/lib/constants";
 import { dashboardApi } from "@/lib/dashboard";
 
 // ─── Constants ────────────────────────────────────────────────
 
+const LOC_TYPES = LOCATION_TYPE_OPTIONS;
+const STREAMS_OPT = STREAM_OPTIONS;
+const SHIFT_OPTIONS = ["Morning", "Afternoon", "Evening"];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const LOC_TYPES = LOCATION_TYPES
-const DESIGNATIONS = ["Principal", "Vice Principal", "Admin", "Teacher", "Owner", "Other"];
-const PLATFORMS =["Facebook", "Instagram", "YouTube", "Twitter", "LinkedIn", "WhatsApp", "Telegram", "Pinterest", "Snapchat", "Website"]
-const STREAMS_OPT = STREAMS
-const PLATFORM_ICONS = {
-  Facebook: "🔵", Instagram: "📷", YouTube: "▶️", Twitter: "🐦",
-  LinkedIn: "💼", WhatsApp: "💬", Telegram: "✈️", Pinterest: "📌",
-  Snapchat: "👻", Website: "🌐",
-};
-
-// ─── Nav ──────────────────────────────────────────────────────
+const SOCIAL_PLATFORMS = [
+  { key: "facebook",        label: "Facebook" },
+  { key: "instagram",       label: "Instagram" },
+  { key: "youtube",         label: "YouTube" },
+  { key: "linkedin",        label: "LinkedIn" },
+  { key: "twitter",         label: "Twitter / X" },
+  { key: "telegram",        label: "Telegram" },
+  { key: "whatsappChannel", label: "WhatsApp Channel" },
+];
 
 const NAV = [
-  { id: "basics", icon: "📝", label: "Basics" },
-  { id: "address", icon: "📍", label: "Address" },
-  { id: "academics", icon: "📚", label: "Academics" },
-  { id: "category", icon: "🏷️", label: "Category" },
-  { id: "fees", icon: "💰", label: "Fees" },
-  { id: "contact", icon: "👤", label: "Contact" },
-  { id: "results", icon: "📊", label: "Results" },
-  { id: "achievements", icon: "🏆", label: "Achievements" },
-  { id: "facilities", icon: "🏗️", label: "Facilities" },
-  { id: "udise", icon: "📋", label: "UDISE Data" },
-  { id: "social", icon: "🔗", label: "Social" },
+  { id: "basics", label: "Basics" },
+  { id: "about", label: "About" },
+  { id: "address", label: "Address" },
+  { id: "contact", label: "Contact" },
+  { id: "academics", label: "Academics" },
+  { id: "category", label: "Category" },
+  { id: "admission", label: "Admission" },
+  { id: "fees", label: "Fees" },
+  { id: "results", label: "Results" },
+  { id: "achievements", label: "Achievements" },
+  { id: "facilities", label: "Facilities" },
+  { id: "social", label: "Social" },
 ];
 
 // ─── Completeness ─────────────────────────────────────────────
 
 const CHECKS = (s) => [
   { label: "School name", done: !!s?.basics?.schoolName },
-  { label: "Description", done: !!s?.basics?.description },
-  { label: "Phone", done: !!s?.basics?.phone },
-  { label: "Logo", done: !!s?.basics?.logoImg },
-  { label: "Cover image", done: !!s?.basics?.coverImg },
+  { label: "Description", done: !!s?.about?.description },
+  { label: "Phone", done: (s?.contact?.phone?.length || 0) > 0 },
+  { label: "Logo", done: !!s?.basics?.logo },
+  { label: "Cover image", done: !!s?.basics?.coverImage },
   { label: "Village", done: !!s?.address?.village },
   { label: "District", done: !!s?.address?.district },
   { label: "Management", done: !!s?.category?.management },
@@ -102,51 +74,65 @@ const pct = (s) => {
   return Math.round((c.filter(x => x.done).length / c.length) * 100);
 };
 
-// ─── Shared styles ────────────────────────────────────────────
+// ─── Shared classes ───────────────────────────────────────────
 
-const inputStyle = {
-  padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #e2e8f0",
-  fontSize: "13px", color: "#0f172a", background: "#fff", outline: "none",
-  width: "100%", boxSizing: "border-box", fontFamily: "inherit",
+const fieldClass =
+  "w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-[13px] text-stone-900 outline-none transition-colors focus:border-amber-600 focus:ring-1 focus:ring-amber-600 placeholder:text-stone-400";
+const labelClass = "block text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-1.5";
+
+// ─── Icons ────────────────────────────────────────────────────
+
+function Icon({ path, className = "w-4 h-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d={path} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+const ICONS = {
+  check: "M5 13l4 4L19 7",
+  x: "M6 6l12 12M18 6L6 18",
+  camera: "M4 8h3l2-2h6l2 2h3v11H4V8ZM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z",
+  school: "M3 10 12 5l9 5-9 5-9-5Zm3 2v5c0 1.5 2.7 2.7 6 2.7s6-1.2 6-2.7v-5",
+  info: "M12 8h.01M11 12h1v4h1",
 };
-const labelStyle = {
-  fontSize: "11px", fontWeight: "600", color: "#475569",
-  textTransform: "uppercase", letterSpacing: "0.05em",
-  display: "block", marginBottom: "5px",
-};
+
+function SpinIcon({ className = "w-4 h-4 text-current" }) {
+  return <span className={`inline-block rounded-full border-2 border-current border-t-transparent animate-spin ${className}`} />;
+}
 
 // ─── Atoms ────────────────────────────────────────────────────
 
 function Label({ children }) {
-  return <span style={labelStyle}>{children}</span>;
+  return <span className={labelClass}>{children}</span>;
 }
 
-function Input({ label, value, onChange, type = "text", placeholder, hint }) {
+function Input({ label, value, onChange, type = "text", placeholder, hint, error }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+    <div className="flex flex-col gap-1">
       {label && <Label>{label}</Label>}
       <input
         type={type} value={value ?? ""} placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        style={inputStyle}
-        onFocus={e => (e.target.style.borderColor = "#6366f1")}
-        onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+        className={`${fieldClass} ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500" : ""}`}
       />
-      {hint && <span style={{ fontSize: "11px", color: "#94a3b8" }}>{hint}</span>}
+      {error ? (
+        <span className="text-[11px] text-red-600">{error}</span>
+      ) : hint ? (
+        <span className="text-[11px] text-stone-400">{hint}</span>
+      ) : null}
     </div>
   );
 }
 
 function Textarea({ label, value, onChange, placeholder, rows = 3 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+    <div className="flex flex-col gap-1">
       {label && <Label>{label}</Label>}
       <textarea
         rows={rows} value={value ?? ""} placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        style={{ ...inputStyle, resize: "vertical" }}
-        onFocus={e => (e.target.style.borderColor = "#6366f1")}
-        onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+        className={`${fieldClass} resize-y`}
       />
     </div>
   );
@@ -154,17 +140,19 @@ function Textarea({ label, value, onChange, placeholder, rows = 3 }) {
 
 function Select({ label, value, onChange, options, placeholder }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+    <div className="flex flex-col gap-1">
       {label && <Label>{label}</Label>}
       <select
         value={value ?? ""}
         onChange={e => onChange(e.target.value)}
-        style={{ ...inputStyle, cursor: "pointer", color: value ? "#0f172a" : "#94a3b8" }}
-        onFocus={e => (e.target.style.borderColor = "#6366f1")}
-        onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+        className={`${fieldClass} cursor-pointer ${value ? "text-stone-900" : "text-stone-400"}`}
       >
         {placeholder && <option value="">{placeholder}</option>}
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
+        {options.map(o => {
+          const optionValue = typeof o === "object" ? o.value : o;
+          const optionLabel = typeof o === "object" ? o.label : o;
+          return <option key={optionValue} value={optionValue}>{optionLabel}</option>;
+        })}
       </select>
     </div>
   );
@@ -172,22 +160,20 @@ function Select({ label, value, onChange, options, placeholder }) {
 
 function MultiChips({ label, value = [], onChange, options }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <div className="flex flex-col gap-1.5">
       {label && <Label>{label}</Label>}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
+      <div className="flex flex-wrap gap-2">
         {options.map(o => {
-          const on = value.includes(o);
+          const optionValue = typeof o === "object" ? o.value : o;
+          const optionLabel = typeof o === "object" ? o.label : o;
+          const on = value.includes(optionValue);
           return (
-            <button key={o} type="button"
-              onClick={() => onChange(on ? value.filter(v => v !== o) : [...value, o])}
-              style={{
-                padding: "5px 13px", borderRadius: "20px", fontSize: "12px",
-                border: `1.5px solid ${on ? "#6366f1" : "#e2e8f0"}`,
-                background: on ? "#ede9fe" : "#fff",
-                color: on ? "#4f46e5" : "#64748b",
-                fontWeight: on ? "600" : "400", cursor: "pointer",
-              }}>
-              {o}
+            <button key={optionValue} type="button"
+              onClick={() => onChange(on ? value.filter(v => v !== optionValue) : [...value, optionValue])}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                on ? "border-amber-600 bg-amber-50 text-amber-700 font-semibold" : "border-stone-300 bg-white text-stone-600 hover:border-stone-400"
+              }`}>
+              {optionLabel}
             </button>
           );
         })}
@@ -198,126 +184,100 @@ function MultiChips({ label, value = [], onChange, options }) {
 
 function Toggle({ label, value, onChange }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-      <span style={{ fontSize: "13px", color: "#0f172a" }}>{label}</span>
-      <div onClick={() => onChange(!value)} style={{
-        width: "40px", height: "22px", borderRadius: "11px", cursor: "pointer",
-        background: value ? "#6366f1" : "#e2e8f0", position: "relative", transition: "background 0.2s", flexShrink: 0,
-      }}>
-        <div style={{
-          width: "16px", height: "16px", borderRadius: "50%", background: "#fff",
-          position: "absolute", top: "3px", transition: "left 0.2s",
-          left: value ? "21px" : "3px", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-        }} />
-      </div>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[13px] text-stone-900">{label}</span>
+      <button type="button" onClick={() => onChange(!value)}
+        className={`relative w-10 h-5.5 h-[22px] w-[40px] rounded-full flex-shrink-0 transition-colors ${value ? "bg-amber-600" : "bg-stone-300"}`}>
+        <span className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow transition-all ${value ? "left-[21px]" : "left-[3px]"}`} />
+      </button>
     </div>
   );
 }
 
 function Grid({ cols = 2, children }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: "14px" }}>
-      {children}
-    </div>
-  );
+  const colClass = cols === 3 ? "sm:grid-cols-3" : cols === 2 ? "sm:grid-cols-2" : "";
+  return <div className={`grid grid-cols-1 ${colClass} gap-3.5`}>{children}</div>;
 }
 
-function Section({ id, icon, title, children }) {
+function Section({ id, title, children }) {
   return (
-    <div id={id} style={{
-      background: "#fff", borderRadius: "14px",
-      border: "1px solid #e2e8f0", overflow: "hidden", scrollMarginTop: "88px",
-    }}>
-      <div style={{ padding: "14px 22px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "9px" }}>
-        <span style={{ fontSize: "17px" }}>{icon}</span>
-        <h2 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#0f172a" }}>{title}</h2>
+    <div id={id} className="bg-white rounded-lg border border-stone-200 overflow-hidden scroll-mt-24">
+      <div className="px-5 py-3.5 border-b border-stone-100">
+        <h2 className="text-[15px] font-bold text-stone-900">{title}</h2>
       </div>
-      <div style={{ padding: "22px" }}>{children}</div>
+      <div className="p-5">{children}</div>
     </div>
   );
 }
 
-function SpinIcon({ size = 14, color = "#6366f1" }) {
+function SaveBtn({ loading, dirty, onClick, disabled }) {
+  const blocked = loading || !dirty || disabled;
   return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%",
-      border: `2px solid ${color}30`, borderTop: `2px solid ${color}`,
-      animation: "spin 0.7s linear infinite", flexShrink: 0,
-    }} />
-  );
-}
-
-function SaveBtn({ loading, dirty, onClick }) {
-  return (
-    <button type="button" onClick={onClick} disabled={loading || !dirty}
-      style={{
-        padding: "9px 20px", borderRadius: "8px", fontSize: "13px", fontWeight: "600",
-        background: dirty ? "#6366f1" : "#f1f5f9", color: dirty ? "#fff" : "#94a3b8",
-        border: "none", cursor: loading || !dirty ? "not-allowed" : "pointer",
-        display: "flex", alignItems: "center", gap: "7px", transition: "all 0.15s",
-      }}>
-      {loading ? <><SpinIcon size={12} color="rgba(255,255,255,0.7)" />Saving…</> : dirty ? "Save changes" : "Saved"}
+    <button type="button" onClick={onClick} disabled={blocked}
+      className={`inline-flex items-center gap-2 px-5 py-2 rounded-md text-[13px] font-semibold transition-colors ${
+        blocked ? "bg-stone-100 text-stone-400 cursor-not-allowed" : "bg-amber-600 text-white hover:bg-amber-700"
+      }`}>
+      {loading && <SpinIcon className="w-3.5 h-3.5" />}
+      {loading ? "Saving…" : dirty ? "Save changes" : "Saved"}
     </button>
   );
 }
 
 function Hint({ children }) {
   return (
-    <div style={{ padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", fontSize: "12px", color: "#64748b", display: "flex", alignItems: "flex-start", gap: "6px" }}>
-      <span>ℹ️</span><span>{children}</span>
+    <div className="flex items-start gap-2 rounded-md bg-stone-50 px-3.5 py-2.5 text-xs text-stone-500">
+      <Icon path={ICONS.info} className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-stone-400" />
+      <span>{children}</span>
     </div>
   );
 }
 
 function Toast({ msg, type }) {
   if (!msg) return null;
+  const ok = type !== "error";
   return (
-    <div style={{
-      position: "fixed", bottom: "24px", left: "50%", transform: "translateX(-50%)",
-      background: type === "error" ? "#fef2f2" : "#f0fdf4",
-      border: `1px solid ${type === "error" ? "#fecaca" : "#bbf7d0"}`,
-      color: type === "error" ? "#dc2626" : "#166534",
-      padding: "12px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: "500",
-      zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
-      display: "flex", alignItems: "center", gap: "8px", whiteSpace: "nowrap",
-    }}>
-      {type === "error" ? "✗" : "✓"} {msg}
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 rounded-lg border px-5 py-3 text-[13px] font-medium shadow-lg whitespace-nowrap ${
+      ok ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"
+    }`}>
+      <Icon path={ok ? ICONS.check : ICONS.x} className="w-3.5 h-3.5" />
+      {msg}
     </div>
   );
 }
 
 function AddBtn({ onClick, label }) {
   return (
-    <button type="button" onClick={onClick} style={{
-      padding: "9px", borderRadius: "8px", border: "1.5px dashed #c7d2fe",
-      background: "#f5f3ff", color: "#6366f1", fontSize: "13px",
-      fontWeight: "600", cursor: "pointer", width: "100%",
-    }}>
+    <button type="button" onClick={onClick}
+      className="w-full py-2.5 rounded-md border border-dashed border-amber-300 bg-amber-50/60 text-amber-700 text-[13px] font-semibold hover:bg-amber-50 transition-colors">
       + {label}
     </button>
   );
 }
 
-function InlineForm({ title, onCancel, onSave, saving, saveLabel = "Save", children }) {
+function InlineForm({ title, onCancel, onSave, saving, saveLabel = "Save", saveDisabled, children }) {
   return (
-    <div style={{ padding: "16px", borderRadius: "10px", border: "1.5px solid #c7d2fe", background: "#f5f3ff" }}>
-      <div style={{ fontWeight: "600", fontSize: "13px", color: "#0f172a", marginBottom: "14px" }}>{title}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+      <div className="font-semibold text-[13px] text-stone-900 mb-3.5">{title}</div>
+      <div className="flex flex-col gap-3">
         {children}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+        <div className="flex justify-end gap-2 pt-1">
           <button type="button" onClick={onCancel}
-            style={{ padding: "8px 16px", borderRadius: "7px", fontSize: "13px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer" }}>
+            className="px-4 py-2 rounded-md text-[13px] border border-stone-300 bg-white hover:bg-stone-50">
             Cancel
           </button>
-          <button type="button" onClick={onSave} disabled={saving}
-            style={{ padding: "8px 18px", borderRadius: "7px", fontSize: "13px", fontWeight: "600", background: "#6366f1", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-            {saving ? <><SpinIcon size={12} color="rgba(255,255,255,0.7)" />Saving…</> : saveLabel}
+          <button type="button" onClick={onSave} disabled={saving || saveDisabled}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-[13px] font-semibold ${
+              saving || saveDisabled ? "bg-stone-200 text-stone-400 cursor-not-allowed" : "bg-amber-600 text-white hover:bg-amber-700"
+            }`}>
+            {saving && <SpinIcon className="w-3.5 h-3.5" />}
+            {saving ? "Saving…" : saveLabel}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
 async function resolvePendingImages(form, schoolId, imageFields) {
   const resolved = { ...form };
   for (const { key, type } of imageFields) {
@@ -332,6 +292,7 @@ async function resolvePendingImages(form, schoolId, imageFields) {
   }
   return resolved;
 }
+
 // ─── Image Upload ─────────────────────────────────────────────
 
 function ImageUpload({ label, value, onChange, schoolId, type, aspectHint, square }) {
@@ -353,49 +314,40 @@ function ImageUpload({ label, value, onChange, schoolId, type, aspectHint, squar
     onChange("");
   };
 
-  const w = square ? 72 : 180, h = 72;
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <div className="flex flex-col gap-1.5">
       {label && <Label>{label}</Label>}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        <div onClick={() => ref.current?.click()} style={{
-          width: w, height: h, borderRadius: square ? "12px" : "10px",
-          border: `2px dashed ${isPending ? "#f59e0b" : "#c7d2fe"}`,
-          background: isPending ? "#fffbeb" : "#f5f3ff",
-          cursor: "pointer", overflow: "hidden", flexShrink: 0,
-          display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
-        }}>
+      <div className="flex items-center gap-3 flex-wrap">
+        <div onClick={() => ref.current?.click()}
+          className={`relative flex-shrink-0 flex items-center justify-center overflow-hidden cursor-pointer border-2 border-dashed ${
+            square ? "w-[72px] h-[72px] rounded-xl" : "w-[180px] h-[72px] rounded-lg"
+          } ${isPending ? "border-amber-400 bg-amber-50" : "border-stone-300 bg-stone-50"}`}>
           {preview
-            ? <img src={preview} alt={label || "image"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <span style={{ fontSize: square ? "26px" : "20px" }}>📷</span>
+            ? <img src={preview} alt={label || "image"} className="w-full h-full object-cover" />
+            : <Icon path={ICONS.camera} className="w-5 h-5 text-stone-400" />
           }
           {isPending && (
-            <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              background: "rgba(245,158,11,0.85)", padding: "3px",
-              fontSize: "9px", fontWeight: "700", color: "#fff", textAlign: "center",
-            }}>
+            <div className="absolute bottom-0 left-0 right-0 bg-amber-600/90 py-0.5 text-[9px] font-bold text-white text-center">
               SAVE TO UPLOAD
             </div>
           )}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div className="flex flex-col gap-1.5">
           <button type="button" onClick={() => ref.current?.click()}
-            style={{ padding: "7px 14px", borderRadius: "7px", fontSize: "12px", fontWeight: "600", border: "1.5px solid #c7d2fe", background: "#fff", color: "#6366f1", cursor: "pointer" }}>
+            className="px-3.5 py-1.5 rounded-md text-xs font-semibold border border-stone-300 bg-white text-stone-700 hover:bg-stone-50">
             {preview ? "Change" : "Choose image"}
           </button>
           {preview && (
             <button type="button" onClick={handleRemove}
-              style={{ padding: "7px 10px", borderRadius: "7px", fontSize: "12px", border: "1.5px solid #fecaca", background: "#fff", color: "#dc2626", cursor: "pointer" }}>
+              className="px-2.5 py-1.5 rounded-md text-xs border border-red-200 bg-white text-red-600 hover:bg-red-50">
               Remove
             </button>
           )}
-          {aspectHint && <span style={{ fontSize: "11px", color: "#94a3b8" }}>{aspectHint}</span>}
-          {isPending && <span style={{ fontSize: "11px", color: "#f59e0b", fontWeight: "600" }}>⚠ Save to apply</span>}
+          {aspectHint && <span className="text-[11px] text-stone-400">{aspectHint}</span>}
+          {isPending && <span className="text-[11px] text-amber-600 font-semibold">Save to apply</span>}
         </div>
       </div>
-      <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+      <input ref={ref} type="file" accept="image/*" className="hidden" onChange={handleFile} />
     </div>
   );
 }
@@ -405,64 +357,50 @@ function ImageUpload({ label, value, onChange, schoolId, type, aspectHint, squar
 function ProfileHeader({ school, percent }) {
   const r = 20, circ = 2 * Math.PI * r;
   const offset = circ - (percent / 100) * circ;
-  const ringColor = percent === 100 ? "#22c55e" : percent >= 60 ? "#6366f1" : "#f59e0b";
+  const ringColor = percent === 100 ? "#059669" : percent >= 60 ? "#d97706" : "#dc2626";
+  const statusType = school?.status?.type;
 
   return (
-    <div style={{
-      position: "sticky", top: 0, zIndex: 40,
-      background: "rgba(255,255,255,0.96)", backdropFilter: "blur(8px)",
-      borderBottom: "1px solid #e2e8f0", padding: "10px 20px",
-      display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap",
-    }}>
-      {/* Logo */}
-      <div style={{
-        width: "40px", height: "40px", borderRadius: "9px",
-        border: "1px solid #e2e8f0", overflow: "hidden", flexShrink: 0,
-        background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        {school?.basics?.logoImg
-          ? <img src={school.basics.logoImg} alt="logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : <span style={{ fontSize: "18px" }}>🏫</span>}
+    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-stone-200 px-5 py-2.5 flex items-center gap-3.5 flex-wrap">
+      <div className="w-10 h-10 rounded-lg border border-stone-200 overflow-hidden flex-shrink-0 bg-amber-50 flex items-center justify-center text-amber-700">
+        {school?.basics?.logo
+          ? <img src={school.basics.logo} alt="logo" className="w-full h-full object-cover" />
+          : <Icon path={ICONS.school} className="w-5 h-5" />}
       </div>
 
-      {/* Name */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: "700", fontSize: "14px", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div className="flex-1 min-w-0">
+        <div className="font-bold text-sm text-stone-900 truncate">
           {school?.basics?.schoolName || "Your School"}
         </div>
-        <div style={{ fontSize: "11px", color: "#64748b" }}>
+        <div className="text-[11px] text-stone-500">
           {[school?.address?.taluka, school?.address?.district].filter(Boolean).join(", ") || "Location not set"}
         </div>
       </div>
 
-      {/* Completeness ring */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-        <div style={{ position: "relative", width: "48px", height: "48px" }}>
-          <svg width="48" height="48" style={{ transform: "rotate(-90deg)" }}>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="relative w-12 h-12">
+          <svg width="48" height="48" className="-rotate-90">
             <circle cx="24" cy="24" r={r} fill="none" stroke="#f1f5f9" strokeWidth="3.5" />
             <circle cx="24" cy="24" r={r} fill="none" stroke={ringColor} strokeWidth="3.5"
-              strokeDasharray={circ} strokeDashoffset={offset}
+              strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
               style={{ transition: "stroke-dashoffset 0.6s ease" }} />
           </svg>
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: "10px", fontWeight: "700", color: ringColor }}>{percent}%</span>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[10px] font-bold" style={{ color: ringColor }}>{percent}%</span>
           </div>
         </div>
-        <span style={{ fontSize: "11px", color: "#64748b" }}>complete</span>
+        <span className="text-[11px] text-stone-500">complete</span>
       </div>
 
-      {/* Badges */}
-      <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
-        {school?.isVerified && (
-          <span style={{ padding: "3px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "600", background: "#dbeafe", color: "#1e40af" }}>✓ Verified</span>
+      <div className="flex gap-1.5 flex-wrap">
+        {school?.verification?.isVerified && (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/20">Verified</span>
         )}
-        {school?.status && (
-          <span style={{
-            padding: "3px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "600",
-            background: school.status === "active" ? "#dcfce7" : "#fef3c7",
-            color: school.status === "active" ? "#166534" : "#92400e",
-          }}>
-            {school.status === "active" ? "Active" : school.status === "unverified" ? "Pending Review" : school.status}
+        {statusType && (
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ring-1 ring-inset ${
+            statusType === "ACTIVE" ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20" : "bg-amber-50 text-amber-700 ring-amber-600/20"
+          }`}>
+            {statusType === "ACTIVE" ? "Active" : statusType === "UNVERIFIED" ? "Pending review" : statusType}
           </span>
         )}
       </div>
@@ -474,20 +412,13 @@ function ProfileHeader({ school, percent }) {
 
 function SectionNav({ active }) {
   return (
-    <nav style={{
-      display: "flex", gap: "4px", flexWrap: "wrap",
-      background: "#fff", borderRadius: "12px", border: "1px solid #e2e8f0",
-      padding: "7px", marginBottom: "20px",
-    }}>
+    <nav className="flex gap-1 flex-wrap bg-white rounded-lg border border-stone-200 p-1.5 mb-5">
       {NAV.map(n => (
-        <a key={n.id} href={`#${n.id}`} style={{
-          padding: "6px 12px", borderRadius: "7px", fontSize: "12px", fontWeight: "600",
-          textDecoration: "none",
-          background: active === n.id ? "#ede9fe" : "transparent",
-          color: active === n.id ? "#4f46e5" : "#64748b",
-          display: "flex", alignItems: "center", gap: "4px",
-        }}>
-          <span>{n.icon}</span>{n.label}
+        <a key={n.id} href={`#${n.id}`}
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+            active === n.id ? "bg-amber-50 text-amber-700" : "text-stone-500 hover:bg-stone-50"
+          }`}>
+          {n.label}
         </a>
       ))}
     </nav>
@@ -499,10 +430,9 @@ function SectionNav({ active }) {
 function LoadingPage() {
   return (
     <DashboardLayout>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "12px" }}>
-        <SpinIcon size={32} color="#6366f1" />
-        <span style={{ fontSize: "13px", color: "#64748b" }}>Loading school profile…</span>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <SpinIcon className="w-8 h-8 text-amber-600" />
+        <span className="text-[13px] text-stone-500">Loading school profile…</span>
       </div>
     </DashboardLayout>
   );
@@ -538,7 +468,6 @@ export default function DashboardSchoolPage() {
   });
   const school = schoolData?.data;
 
-  // Highlight active nav section on scroll
   useEffect(() => {
     if (isLoading) return;
     const obs = new IntersectionObserver(
@@ -549,22 +478,18 @@ export default function DashboardSchoolPage() {
     return () => obs.disconnect();
   }, [isLoading]);
 
-  // Generic mutation factory — patches cache on success
   const mut = (apiFn) =>
     useMutation({
       mutationFn: apiFn,
       onSuccess: (res) => {
-        console.log(res);
         if (res.data?.data) {
           qc.setQueryData(["my-school"], (old) =>
-            old ? { ...old, data: res.data.data } : old
+            old ? { ...old, data: { ...old.data, ...pathToPatch(res) } } : old
           );
         }
         showToast("Saved successfully");
       },
-
       onError: (err) => {
-        console.log(err);
         showToast(
           err?.response?.data?.message || "Save failed",
           "error"
@@ -572,71 +497,91 @@ export default function DashboardSchoolPage() {
       },
     });
 
-  // Section mutations
-  const basicsMut = mut(d => dashboardApi.updateBasics(d));
-  const addressMut = mut(d => dashboardApi.updateAddress(d));
-  const academicsMut = mut(d => dashboardApi.updateAcademics(d));
-  const categoryMut = mut(d => dashboardApi.updateCategory(d));
-  const feesMut = mut(d => dashboardApi.updateFees(d));
-  const contactMut = mut(d => dashboardApi.updateContact(d));
-  const facilityMut = mut(d => dashboardApi.updateFacility(d));
-  const socialMut = mut(d => dashboardApi.updateSocial(d));
+  const sectionMut = (apiFn, key) =>
+    useMutation({
+      mutationFn: apiFn,
+      onSuccess: (res) => {
+        if (res.data?.data !== undefined) {
+          qc.setQueryData(["my-school"], (old) =>
+            old ? { ...old, data: { ...old.data, [key]: res.data.data } } : old
+          );
+        }
+        showToast("Saved successfully");
+      },
+      onError: (err) => {
+        showToast(err?.response?.data?.message || "Save failed", "error");
+      },
+    });
 
-  // Array mutations
-  const addResultMut = mut(d => dashboardApi.addResult(d));
+  function pathToPatch(res) { return {}; }
+
+  const basicsMut = sectionMut(d => dashboardApi.updateBasics(d), "basics");
+  const aboutMut = sectionMut(d => dashboardApi.updateAbout(d), "about");
+  const addressMut = sectionMut(d => dashboardApi.updateAddress(d), "address");
+  const academicsMut = sectionMut(d => dashboardApi.updateAcademics(d), "academics");
+  const categoryMut = sectionMut(d => dashboardApi.updateCategory(d), "category");
+  const admissionMut = sectionMut(d => dashboardApi.updateAdmission(d), "admission");
+  const feesMut = sectionMut(d => dashboardApi.updateFees(d), "fees");
+  const contactMut = sectionMut(d => dashboardApi.updateContact(d), "contact");
+  const socialMut = sectionMut(d => dashboardApi.updateSocial(d), "social");
+
+  const addResultMut = sectionMut(d => dashboardApi.addResult(d), "results");
   const editResultMut = mut(({ id, ...d }) => dashboardApi.updateResult(id, d));
   const delResultMut = mut(id => dashboardApi.deleteResult(id));
-  const addAchMut = mut(d =>{ console.log("Adding achievement", d); return dashboardApi.addAchievement(d)});
+  const addAchMut = sectionMut(d => dashboardApi.addAchievement(d), "achievements");
   const editAchMut = mut(({ id, ...d }) => dashboardApi.updateAchievement(id, d));
   const delAchMut = mut(id => dashboardApi.deleteAchievement(id));
-  const addFacMut = mut(d => dashboardApi.addFacilityItem(d));
+  const addFacMut = sectionMut(d => dashboardApi.addFacilityItem(d), "facilities");
   const editFacMut = mut(({ id, ...d }) => dashboardApi.updateFacilityItem(id, d));
   const delFacMut = mut(id => dashboardApi.deleteFacilityItem(id));
+
+  useEffect(() => {
+    [editResultMut, delResultMut, editAchMut, delAchMut, editFacMut, delFacMut].forEach(m => {
+      if (m.isSuccess) qc.invalidateQueries({ queryKey: ["my-school"] });
+    });
+  }, [editResultMut.isSuccess, delResultMut.isSuccess, editAchMut.isSuccess, delAchMut.isSuccess, editFacMut.isSuccess, delFacMut.isSuccess]);
 
   if (authLoading || isLoading) return <LoadingPage />;
 
   if (!user?.schoolId) return (
     <DashboardLayout>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ textAlign: "center", padding: "70px 20px" }}>
-        <div style={{ fontSize: "48px", marginBottom: "14px" }}>🏫</div>
-        <h2 style={{ color: "#0f172a", marginBottom: "8px" }}>No school linked</h2>
-        <p style={{ color: "#64748b", marginBottom: "22px" }}>Register your school to manage its profile.</p>
-        <a href="/claim" style={{ padding: "11px 24px", background: "#6366f1", color: "#fff", borderRadius: "8px", fontWeight: "600", textDecoration: "none" }}>
-          Claim Your School →
+      <div className="text-center py-20 px-5">
+        <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+          <Icon path={ICONS.school} className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-stone-900 mb-1.5">No school linked</h2>
+        <p className="text-sm text-stone-500 mb-6">Register your school to manage its profile.</p>
+        <a href="/claim" className="inline-block px-6 py-2.5 bg-stone-900 text-white rounded-md font-semibold text-sm hover:bg-stone-800">
+          Claim your school
         </a>
       </div>
     </DashboardLayout>
   );
 
   return (
-
-      <>
+    <>
       <ProfileHeader school={school} percent={pct(school)} />
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "22px 14px" }}>
-        <div style={{ marginBottom: "18px" }}>
-          <h1 style={{ fontSize: "19px", fontWeight: "700", color: "#0f172a", margin: "0 0 3px" }}>
-            School Profile
-          </h1>
-          <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>
-            Keep everything up to date so parents can find you.
-          </p>
+      <div className="max-w-[800px] mx-auto px-3.5 py-5">
+        <div className="mb-4">
+          <h1 className="text-[19px] font-bold text-stone-900 mb-0.5">School Profile</h1>
+          <p className="text-stone-500 text-[13px]">Keep everything up to date so parents can find you.</p>
         </div>
 
         <SectionNav active={active} />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+        <div className="flex flex-col gap-4">
           <BasicsSection school={school} mutation={basicsMut} />
+          <AboutSection school={school} mutation={aboutMut} />
           <AddressSection school={school} mutation={addressMut} />
+          <ContactSection school={school} mutation={contactMut} />
           <AcademicsSection school={school} mutation={academicsMut} />
           <CategorySection school={school} mutation={categoryMut} />
+          <AdmissionSection school={school} mutation={admissionMut} />
           <FeesSection school={school} mutation={feesMut} />
-          <ContactSection school={school} mutation={contactMut} />
           <ResultsSection school={school} addMut={addResultMut} editMut={editResultMut} delMut={delResultMut} />
           <AchievementsSection school={school} addMut={addAchMut} editMut={editAchMut} delMut={delAchMut} />
           <FacilitiesShowcase school={school} addMut={addFacMut} editMut={editFacMut} delMut={delFacMut} />
-          <UDISEFacilitySection school={school} mutation={facilityMut} />
           <SocialSection school={school} mutation={socialMut} />
         </div>
       </div>
@@ -656,14 +601,11 @@ function BasicsSection({ school, mutation }) {
   const [uploading, setUploading] = useState(false);
   const fromSchool = () => ({
     schoolName: school?.basics?.schoolName || "",
-    phone: school?.basics?.phone || "",
-    email: school?.basics?.email || "",
-    website: school?.basics?.website || "",
-    description: school?.basics?.description || "",
+    establishedYear: school?.basics?.establishedYear ?? "",
     trustName: school?.basics?.trustName || "",
-    establishedYear: school?.basics?.establishedYear || "",
-    logoImg: school?.basics?.logoImg || "",
-    coverImg: school?.basics?.coverImg || "",
+    principalName: school?.basics?.principalName || "",
+    logo: school?.basics?.logo || "",
+    coverImage: school?.basics?.coverImage || "",
   });
   const [form, setForm] = useState(fromSchool);
   useEffect(() => setForm(fromSchool()), [school]);
@@ -675,49 +617,70 @@ function BasicsSection({ school, mutation }) {
   const f = k => v => setForm(p => ({ ...p, [k]: v }));
 
   return (
-    <Section id="basics" icon="📝" title="Basic Information">
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* Images */}
-        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "18px", alignItems: "start" }}>
-          <ImageUpload
-            label="Logo" value={form.logoImg} onChange={f("logoImg")}
-            schoolId={school?._id} type="logo" aspectHint="Square · min 200×200" square
-          />
-          <ImageUpload
-            label="Cover Image" value={form.coverImg} onChange={f("coverImg")}
-            schoolId={school?._id} type="cover" aspectHint="16:9 · min 800×450"
-          />
+    <Section id="basics" title="Basic information">
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4 items-start">
+          <ImageUpload label="Logo" value={form.logo} onChange={f("logo")} schoolId={school?._id} type="logo" aspectHint="Square · min 200×200" square />
+          <ImageUpload label="Cover image" value={form.coverImage} onChange={f("coverImage")} schoolId={school?._id} type="cover" aspectHint="16:9 · min 800×450" />
         </div>
-        <Input label="School Name *" value={form.schoolName} onChange={f("schoolName")} placeholder="Full official school name" />
+        <Input label="School name *" value={form.schoolName} onChange={f("schoolName")} placeholder="Full official school name" />
         <Grid>
-          <Input label="Phone" value={form.phone} onChange={f("phone")} placeholder="+91 98765 43210" />
-          <Input label="Email" value={form.email} onChange={f("email")} type="email" placeholder="school@example.com" />
+          <Input label="Trust / society name" value={form.trustName} onChange={f("trustName")} placeholder="Managing trust or society name" />
+          <Input label="Principal name" value={form.principalName} onChange={f("principalName")} placeholder="Current principal's name" />
         </Grid>
-        <Grid>
-          <Input label="Website" value={form.website} onChange={f("website")} placeholder="https://school.edu.in" />
-          <Input label="Established Year" value={form.establishedYear} onChange={f("establishedYear")} type="number" placeholder="1990" />
-        </Grid>
-        <Input label="Trust / Society Name" value={form.trustName} onChange={f("trustName")} placeholder="Managing trust or society name" />
-        <Textarea label="Description" value={form.description} onChange={f("description")} placeholder="Brief about the school — vision, achievements, highlights…" rows={4} />
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-         <SaveBtn loading={uploading || mutation.isPending} dirty={dirty} onClick={async () => {
-  setUploading(true);
-  try {
-    const resolved = await resolvePendingImages(form, school?._id, [
-      { key: "logoImg", type: "logo" },
-      { key: "coverImg", type: "cover" },
-    ]);
-    mutation.mutate(resolved);
-  } catch (err) { alert(err.message); }
-  finally { setUploading(false); }
-}} />
+        <Input label="Established year" value={form.establishedYear} onChange={f("establishedYear")} type="number" placeholder="1990" />
+        <div className="flex justify-end">
+          <SaveBtn loading={uploading || mutation.isPending} dirty={dirty} onClick={async () => {
+            setUploading(true);
+            try {
+              const resolved = await resolvePendingImages(form, school?._id, [
+                { key: "logo", type: "logo" },
+                { key: "coverImage", type: "cover" },
+              ]);
+              mutation.mutate(resolved);
+            } catch (err) { alert(err.message); }
+            finally { setUploading(false); }
+          }} />
         </div>
       </div>
     </Section>
   );
 }
 
-// ── 2. Address ────────────────────────────────────────────────
+// ── 2. About ──────────────────────────────────────────────────
+
+function AboutSection({ school, mutation }) {
+  const fromSchool = () => ({
+    tagline: school?.about?.tagline || "",
+    description: school?.about?.description || "",
+    vision: school?.about?.vision || "",
+    mission: school?.about?.mission || "",
+    principalMessage: school?.about?.principalMessage || "",
+  });
+  const [form, setForm] = useState(fromSchool);
+  useEffect(() => setForm(fromSchool()), [school]);
+  const dirty = Object.keys(fromSchool()).some(k => String(form[k] ?? "") !== String(fromSchool()[k] ?? ""));
+  const f = k => v => setForm(p => ({ ...p, [k]: v }));
+
+  return (
+    <Section id="about" title="About the school">
+      <div className="flex flex-col gap-3.5">
+        <Input label="Tagline" value={form.tagline} onChange={f("tagline")} placeholder="A short catchy line about your school" />
+        <Textarea label="Description" value={form.description} onChange={f("description")} placeholder="Detailed overview — history, achievements, highlights…" rows={4} />
+        <Grid>
+          <Textarea label="Vision" value={form.vision} onChange={f("vision")} placeholder="School's vision statement" rows={3} />
+          <Textarea label="Mission" value={form.mission} onChange={f("mission")} placeholder="School's mission statement" rows={3} />
+        </Grid>
+        <Textarea label="Principal's message" value={form.principalMessage} onChange={f("principalMessage")} placeholder="A message from the principal to parents" rows={3} />
+        <div className="flex justify-end">
+          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={() => mutation.mutate(form)} />
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ── 3. Address ────────────────────────────────────────────────
 
 function AddressSection({ school, mutation }) {
   const fromSchool = () => ({
@@ -726,44 +689,79 @@ function AddressSection({ school, mutation }) {
     village: school?.address?.village || "",
     pincode: school?.address?.pincode || "",
     full: school?.address?.full || "",
-    googleMapsUrl: school?.address?.googleMapsUrl || "",
+    googleMapsUrl: school?.address?.geo?.googleMapsUrl || "",
   });
   const [form, setForm] = useState(fromSchool);
   useEffect(() => setForm(fromSchool()), [school]);
-// REPLACE your dirty line with:
-const dirty = Object.keys(fromSchool()).some(k => {
-  const v = form[k];
-  if (v?._pendingFile) return true;
-  return String(v ?? "") !== String(fromSchool()[k] ?? "");
-});
+  const dirty = Object.keys(fromSchool()).some(k => String(form[k] ?? "") !== String(fromSchool()[k] ?? ""));
   const f = k => v => setForm(p => ({ ...p, [k]: v }));
 
+  const save = () => {
+    const { googleMapsUrl, ...rest } = form;
+    mutation.mutate({ ...rest, geo: { googleMapsUrl } });
+  };
+
   return (
-    <Section id="address" icon="📍" title="Address">
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+    <Section id="address" title="Address">
+      <div className="flex flex-col gap-3.5">
         <Grid>
-          <Select label="District *" value={form.district} onChange={f("district")} options={DISTRICTS} placeholder="Select district" />
+          <Select label="District *" value={form.district} onChange={f("district")} options={DISTRICT_OPTIONS} placeholder="Select district" />
           <Input label="Taluka" value={form.taluka} onChange={f("taluka")} placeholder="Taluka name" />
         </Grid>
         <Grid>
-          <Input label="Village / City" value={form.village} onChange={f("village")} placeholder="Village or city" />
+          <Input label="Village / city" value={form.village} onChange={f("village")} placeholder="Village or city" />
           <Input label="Pincode" value={form.pincode} onChange={f("pincode")} placeholder="380001" />
         </Grid>
-        <Textarea label="Full Address" value={form.full} onChange={f("full")} placeholder="Complete address as on school letterhead" rows={2} />
-        <Input
-          label="Google Maps URL" value={form.googleMapsUrl} onChange={f("googleMapsUrl")}
-          placeholder="https://maps.google.com/?q=…"
-          hint="Paste the link from Google Maps Share button"
-        />
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={() => mutation.mutate(form)} />
+        <Textarea label="Full address" value={form.full} onChange={f("full")} placeholder="Complete address as on school letterhead" rows={2} />
+        <Input label="Google Maps URL" value={form.googleMapsUrl} onChange={f("googleMapsUrl")} placeholder="https://maps.google.com/?q=…" hint="Paste the link from Google Maps Share button" />
+        <div className="flex justify-end">
+          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={save} />
         </div>
       </div>
     </Section>
   );
 }
 
-// ── 3. Academics ──────────────────────────────────────────────
+// ── 4. Contact ────────────────────────────────────────────────
+// schema: contact {phone: [String], whatsapp, email, website}
+// Phone is edited as a comma-separated string and split into an array
+// right before the request goes out — this was already correct; kept as-is.
+
+function ContactSection({ school, mutation }) {
+  const fromSchool = () => ({
+    phone: (school?.contact?.phone || []).join(", "),
+    whatsapp: school?.contact?.whatsapp || "",
+    email: school?.contact?.email || "",
+    website: school?.contact?.website || "",
+  });
+  const [form, setForm] = useState(fromSchool);
+  useEffect(() => setForm(fromSchool()), [school]);
+  const dirty = Object.keys(fromSchool()).some(k => String(form[k] ?? "") !== String(fromSchool()[k] ?? ""));
+  const f = k => v => setForm(p => ({ ...p, [k]: v }));
+
+  const save = () => {
+    const phone = form.phone.split(",").map(s => s.trim()).filter(Boolean);
+    mutation.mutate({ ...form, phone });
+  };
+
+  return (
+    <Section id="contact" title="Contact info">
+      <div className="flex flex-col gap-3.5">
+        <Input label="Phone number(s)" value={form.phone} onChange={f("phone")} placeholder="+91 98765 43210, +91 98765 00000" hint="Separate multiple numbers with commas" />
+        <Grid>
+          <Input label="WhatsApp" value={form.whatsapp} onChange={f("whatsapp")} placeholder="+91 98765 43210" />
+          <Input label="Email" value={form.email} onChange={f("email")} type="email" placeholder="school@example.com" />
+        </Grid>
+        <Input label="Website" value={form.website} onChange={f("website")} placeholder="https://school.edu.in" />
+        <div className="flex justify-end">
+          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={save} />
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ── 5. Academics ──────────────────────────────────────────────
 
 function AcademicsSection({ school, mutation }) {
   const fromSchool = () => ({
@@ -772,41 +770,66 @@ function AcademicsSection({ school, mutation }) {
     medium: school?.academics?.medium || [],
     board: school?.academics?.board || [],
     streams: school?.academics?.streams || [],
+    shifts: school?.academics?.shifts || [],
+    morning: school?.academics?.timing?.morning || "",
+    evening: school?.academics?.timing?.evening || "",
     totalStudents: school?.academics?.totalStudents ?? "",
     totalTeachers: school?.academics?.totalTeachers ?? "",
+    affiliationNumber: school?.academics?.affiliationNumber || "",
+    indexNumber: school?.academics?.indexNumber || "",
+    subjects: (school?.academics?.subjects || []).join(", "),
   });
   const [form, setForm] = useState(fromSchool);
   useEffect(() => setForm(fromSchool()), [school]);
   const dirty = Object.keys(fromSchool()).some(k => {
     const v = form[k];
-    if (v?._pendingFile) return true;
+    if (Array.isArray(v)) return JSON.stringify(v) !== JSON.stringify(fromSchool()[k]);
     return String(v ?? "") !== String(fromSchool()[k] ?? "");
   });
   const f = k => v => setForm(p => ({ ...p, [k]: v }));
 
+  const save = () => {
+    const { morning, evening, subjects, ...rest } = form;
+    mutation.mutate({
+      ...rest,
+      timing: { morning, evening },
+      subjects: subjects.split(",").map(s => s.trim()).filter(Boolean),
+    });
+  };
+
   return (
-    <Section id="academics" icon="📚" title="Academics">
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+    <Section id="academics" title="Academics">
+      <div className="flex flex-col gap-3.5">
         <Grid>
-          <Input label="Grade From" value={form.gradeFrom} onChange={f("gradeFrom")} type="number" placeholder="1" hint="Starting grade (e.g. 1)" />
-          <Input label="Grade To" value={form.gradeTo} onChange={f("gradeTo")} type="number" placeholder="10" hint="Ending grade (e.g. 12)" />
+          <Input label="Grade from" value={form.gradeFrom} onChange={f("gradeFrom")} type="number" placeholder="1" hint="Starting grade (e.g. 1)" />
+          <Input label="Grade to" value={form.gradeTo} onChange={f("gradeTo")} type="number" placeholder="10" hint="Ending grade (e.g. 12)" />
         </Grid>
-        <MultiChips label="Medium of Instruction" value={form.medium} onChange={f("medium")} options={MEDIUMS} />
-        <MultiChips label="Board" value={form.board} onChange={f("board")} options={BOARDS} />
+        <MultiChips label="Medium of instruction" value={form.medium} onChange={f("medium")} options={MEDIUM_OPTIONS} />
+        <MultiChips label="Board" value={form.board} onChange={f("board")} options={BOARD_OPTIONS} />
         <MultiChips label="Streams (Std 11–12)" value={form.streams} onChange={f("streams")} options={STREAMS_OPT} />
+        <MultiChips label="Shifts" value={form.shifts} onChange={f("shifts")} options={SHIFT_OPTIONS} />
         <Grid>
-          <Input label="Total Students" value={form.totalStudents} onChange={f("totalStudents")} type="number" placeholder="320" />
-          <Input label="Total Teachers" value={form.totalTeachers} onChange={f("totalTeachers")} type="number" placeholder="18" />
+          <Input label="Morning timing" value={form.morning} onChange={f("morning")} placeholder="e.g. 7:00 AM – 12:00 PM" />
+          <Input label="Evening timing" value={form.evening} onChange={f("evening")} placeholder="e.g. 12:30 PM – 5:30 PM" />
         </Grid>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={() => mutation.mutate(form)} />
+        <Grid>
+          <Input label="Total students" value={form.totalStudents} onChange={f("totalStudents")} type="number" placeholder="320" />
+          <Input label="Total teachers" value={form.totalTeachers} onChange={f("totalTeachers")} type="number" placeholder="18" />
+        </Grid>
+        <Grid>
+          <Input label="Affiliation number" value={form.affiliationNumber} onChange={f("affiliationNumber")} placeholder="Board affiliation number" />
+          <Input label="Index number" value={form.indexNumber} onChange={f("indexNumber")} placeholder="Government index number" />
+        </Grid>
+        <Input label="Subjects offered" value={form.subjects} onChange={f("subjects")} placeholder="Maths, Science, English…" hint="Comma-separated" />
+        <div className="flex justify-end">
+          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={save} />
         </div>
       </div>
     </Section>
   );
 }
 
-// ── 4. Category ───────────────────────────────────────────────
+// ── 6. Category ───────────────────────────────────────────────
 
 function CategorySection({ school, mutation }) {
   const fromSchool = () => ({
@@ -816,23 +839,18 @@ function CategorySection({ school, mutation }) {
   });
   const [form, setForm] = useState(fromSchool);
   useEffect(() => setForm(fromSchool()), [school]);
-// REPLACE your dirty line with:
-const dirty = Object.keys(fromSchool()).some(k => {
-  const v = form[k];
-  if (v?._pendingFile) return true;
-  return String(v ?? "") !== String(fromSchool()[k] ?? "");
-});
+  const dirty = Object.keys(fromSchool()).some(k => String(form[k] ?? "") !== String(fromSchool()[k] ?? ""));
   const f = k => v => setForm(p => ({ ...p, [k]: v }));
 
   return (
-    <Section id="category" icon="🏷️" title="Category">
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-        <Select label="Management Type" value={form.management} onChange={f("management")} options={MANAGEMENTS} placeholder="Select management type" />
+    <Section id="category" title="Category">
+      <div className="flex flex-col gap-3.5">
+        <Select label="Management type" value={form.management} onChange={f("management")} options={MANAGEMENT_OPTIONS} placeholder="Select management type" />
         <Grid>
-          <Select label="School Type" value={form.schoolType} onChange={f("schoolType")} options={SCHOOL_TYPES} placeholder="Select type" />
-          <Select label="Location Type" value={form.locationType} onChange={f("locationType")} options={LOC_TYPES} placeholder="Select location" />
+          <Select label="School type" value={form.schoolType} onChange={f("schoolType")} options={SCHOOL_TYPE_OPTIONS} placeholder="Select type" />
+          <Select label="Location type" value={form.locationType} onChange={f("locationType")} options={LOC_TYPES} placeholder="Select location" />
         </Grid>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div className="flex justify-end">
           <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={() => mutation.mutate(form)} />
         </div>
       </div>
@@ -840,7 +858,78 @@ const dirty = Object.keys(fromSchool()).some(k => {
   );
 }
 
-// ── 5. Fees ───────────────────────────────────────────────────
+// ── 7. Admission ──────────────────────────────────────────────
+
+function AdmissionSection({ school, mutation }) {
+  const toDateInput = (d) => (d ? new Date(d).toISOString().slice(0, 10) : "");
+  const fromSchool = () => ({
+    isOpen: !!school?.admission?.isOpen,
+    startDate: toDateInput(school?.admission?.startDate),
+    endDate: toDateInput(school?.admission?.endDate),
+    onlineAvailable: !!school?.admission?.onlineAvailable,
+    admissionUrl: school?.admission?.admissionUrl || "",
+    eligibility: (school?.admission?.eligibility || []).join(", "),
+    process: (school?.admission?.process || []).join(", "),
+    documentsRequired: (school?.admission?.documentsRequired || []).join(", "),
+    feeStructurePdfUrl: school?.admission?.feeStructurePdfUrl || "",
+    contactName: school?.admission?.adminContact?.name || "",
+    contactPhone: school?.admission?.adminContact?.phone || "",
+    contactEmail: school?.admission?.adminContact?.email || "",
+  });
+  const [form, setForm] = useState(fromSchool);
+  useEffect(() => setForm(fromSchool()), [school]);
+  const dirty = Object.keys(fromSchool()).some(k => String(form[k] ?? "") !== String(fromSchool()[k] ?? ""));
+  const f = k => v => setForm(p => ({ ...p, [k]: v }));
+
+  const save = () => {
+    const { documentsRequired,eligibility, process, contactName, contactPhone, contactEmail, ...rest } = form;
+    mutation.mutate({
+      ...rest,
+
+      eligibility: eligibility.split(",").map(s => s.trim()).filter(Boolean),
+      process: process.split(",").map(s => s.trim()).filter(Boolean),
+      documentsRequired: documentsRequired.split(",").map(s => s.trim()).filter(Boolean),
+      adminContact: { name: contactName, phone: contactPhone, email: contactEmail },
+    });
+  };
+
+  return (
+    <Section id="admission" title="Admission">
+      <div className="flex flex-col gap-3.5">
+        <div className="rounded-md border border-stone-200 bg-stone-50 px-3.5 py-2.5">
+          <Toggle label="Admissions currently open" value={form.isOpen} onChange={f("isOpen")} />
+        </div>
+        <Grid>
+          <Input label="Start date" value={form.startDate} onChange={f("startDate")} type="date" />
+          <Input label="End date" value={form.endDate} onChange={f("endDate")} type="date" />
+        </Grid>
+        <div className="rounded-md border border-stone-200 bg-stone-50 px-3.5 py-2.5">
+          <Toggle label="Online application available" value={form.onlineAvailable} onChange={f("onlineAvailable")} />
+        </div>
+        <Input label="Admission URL" value={form.admissionUrl} onChange={f("admissionUrl")} placeholder="https://school.edu.in/admissions" />
+        <Textarea label="Eligibility" value={form.eligibility} onChange={f("eligibility")} placeholder="Age criteria, prior qualification, etc." rows={2} />
+        <Textarea label="Process" value={form.process} onChange={f("process")} placeholder="Step-by-step admission process" rows={2} />
+        <Input label="Documents required" value={form.documentsRequired} onChange={f("documentsRequired")} placeholder="Birth certificate, Aadhar, transfer certificate…" hint="Comma-separated" />
+        <Input label="Fee structure PDF URL" value={form.feeStructurePdfUrl} onChange={f("feeStructurePdfUrl")} placeholder="Link to uploaded fee structure PDF" />
+        <div>
+          <Label>Admission contact person</Label>
+          <div className="mt-2">
+            <Grid cols={3}>
+              <Input label="Name" value={form.contactName} onChange={f("contactName")} placeholder="Contact person name" />
+              <Input label="Phone" value={form.contactPhone} onChange={f("contactPhone")} placeholder="+91 98765 43210" />
+              <Input label="Email" value={form.contactEmail} onChange={f("contactEmail")} type="email" placeholder="admissions@school.com" />
+            </Grid>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={save} />
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ── 8. Fees ───────────────────────────────────────────────────
 
 function FeesSection({ school, mutation }) {
   const fromSchool = () => ({
@@ -852,28 +941,23 @@ function FeesSection({ school, mutation }) {
   });
   const [form, setForm] = useState(fromSchool);
   useEffect(() => setForm(fromSchool()), [school]);
-// REPLACE your dirty line with:
-const dirty = Object.keys(fromSchool()).some(k => {
-  const v = form[k];
-  if (v?._pendingFile) return true;
-  return String(v ?? "") !== String(fromSchool()[k] ?? "");
-});
+  const dirty = Object.keys(fromSchool()).some(k => String(form[k] ?? "") !== String(fromSchool()[k] ?? ""));
   const f = k => v => setForm(p => ({ ...p, [k]: v }));
 
   return (
-    <Section id="fees" icon="💰" title="Fees (Annual, ₹)">
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+    <Section id="fees" title="Fees (annual, ₹)">
+      <div className="flex flex-col gap-3.5">
         <Hint>Enter approximate annual fees in rupees. Leave blank if not applicable.</Hint>
         <Grid>
-          <Input label="Min Tuition Fees" value={form.minTuitionFees} onChange={f("minTuitionFees")} type="number" placeholder="5000" />
-          <Input label="Max Tuition Fees" value={form.maxTuitionFees} onChange={f("maxTuitionFees")} type="number" placeholder="15000" />
+          <Input label="Min tuition fees" value={form.minTuitionFees} onChange={f("minTuitionFees")} type="number" placeholder="5000" />
+          <Input label="Max tuition fees" value={form.maxTuitionFees} onChange={f("maxTuitionFees")} type="number" placeholder="15000" />
         </Grid>
         <Grid cols={3}>
           <Input label="Transport" value={form.transportFees} onChange={f("transportFees")} type="number" placeholder="3000" />
           <Input label="Hostel" value={form.hostelFees} onChange={f("hostelFees")} type="number" placeholder="20000" />
           <Input label="Other" value={form.otherFees} onChange={f("otherFees")} type="number" placeholder="500" />
         </Grid>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div className="flex justify-end">
           <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={() => mutation.mutate(form)} />
         </div>
       </div>
@@ -881,48 +965,17 @@ const dirty = Object.keys(fromSchool()).some(k => {
   );
 }
 
-// ── 6. Contact ────────────────────────────────────────────────
+// ── 9. Results ────────────────────────────────────────────────
+// schema: results[] {classLabel, year, stream, board, medium, appeared, passed, passingRate, posterImageUrl}
+//
+// FIX: classLabel + year are required by the backend, but nothing stopped
+// an incomplete entry from being submitted — which then fails with
+// "year is required", and (because Mongoose validates the whole results[]
+// array on save) can keep blocking saves on OTHER sections too until the
+// bad entry is fixed. Save is now disabled until both are filled, and
+// numeric fields are coerced with Number() before the request goes out.
 
-function ContactSection({ school, mutation }) {
-  const fromSchool = () => ({
-    contactName: school?.adminInfo?.contactName || school?.adminInfo?.name || "",
-    contactPhone: school?.adminInfo?.contactPhone || school?.adminInfo?.phone || "",
-    contactEmail: school?.adminInfo?.contactEmail || school?.adminInfo?.email || "",
-    designation: school?.adminInfo?.designation || "",
-  });
-  const [form, setForm] = useState(fromSchool);
-  useEffect(() => setForm(fromSchool()), [school]);
-// REPLACE your dirty line with:
-const dirty = Object.keys(fromSchool()).some(k => {
-  const v = form[k];
-  if (v?._pendingFile) return true;
-  return String(v ?? "") !== String(fromSchool()[k] ?? "");
-});
-  const f = k => v => setForm(p => ({ ...p, [k]: v }));
-
-  return (
-    <Section id="contact" icon="👤" title="Contact Person">
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-        <Hint>The person parents should contact for admissions or queries.</Hint>
-        <Grid>
-          <Input label="Full Name" value={form.contactName} onChange={f("contactName")} placeholder="Contact person name" />
-          <Select label="Designation" value={form.designation} onChange={f("designation")} options={DESIGNATIONS} placeholder="Select role" />
-        </Grid>
-        <Grid>
-          <Input label="Phone" value={form.contactPhone} onChange={f("contactPhone")} placeholder="+91 98765 43210" />
-          <Input label="Email" value={form.contactEmail} onChange={f("contactEmail")} type="email" placeholder="contact@school.com" />
-        </Grid>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={() => mutation.mutate(form)} />
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-// ── 7. Results ────────────────────────────────────────────────
-
-const BLANK_RESULT = { year: "", class: "", totalStudents: "", passStudents: "", passRatio: "", posterImg: "" };
+const BLANK_RESULT = { classLabel: "", year: "", stream: "", board: "", medium: "", appeared: "", passed: "", passingRate: "", posterImageUrl: "" };
 
 function ResultsSection({ school, addMut, editMut, delMut }) {
   const [uploading, setUploading] = useState(false);
@@ -935,84 +988,103 @@ function ResultsSection({ school, addMut, editMut, delMut }) {
   const openAdd = () => { setEditing(null); setForm(BLANK_RESULT); setShowForm(true); };
   const openEdit = (r) => {
     setEditing(r._id);
-    setForm({ year: r.year, class: String(r.class), totalStudents: r.totalStudents ?? "", passStudents: r.passStudents ?? "", passRatio: r.passRatio ?? "", posterImg: r.posterImg || "" });
+    setForm({
+      classLabel: r.classLabel || "", year: r.year ?? "", stream: r.stream || "",
+      board: r.board || "", medium: r.medium || "",
+      appeared: r.appeared ?? "", passed: r.passed ?? "", passingRate: r.passingRate ?? "",
+      posterImageUrl: r.posterImageUrl || "",
+    });
     setShowForm(true);
   };
   const close = () => { setShowForm(false); setEditing(null); };
-const save = async () => {
-  setUploading(true);
-  try {
-    const resolved = await resolvePendingImages(form, school?._id, [
-      { key: "posterImg", type: "result" }
-    ]);
-    const cb = { onSuccess: close };
-    editing ? editMut.mutate({ id: editing, ...resolved }, cb) : addMut.mutate(resolved, cb);
-  } catch (err) { alert(err.message); }
-  finally { setUploading(false); }
-};
-const saving = uploading || addMut.isPending || editMut.isPending;
+  const missingRequired = !form.classLabel.trim() || !String(form.year).trim();
+
+  const save = async () => {
+    if (missingRequired) return;
+    setUploading(true);
+    try {
+      const resolved = await resolvePendingImages(form, school?._id, [
+        { key: "posterImageUrl", type: "result" }
+      ]);
+      if (!resolved.passingRate && resolved.appeared && resolved.passed) {
+        resolved.passingRate = Math.round((Number(resolved.passed) / Number(resolved.appeared)) * 1000) / 10;
+      }
+      resolved.year = Number(resolved.year);
+      if (resolved.appeared !== "") resolved.appeared = Number(resolved.appeared);
+      if (resolved.passed !== "") resolved.passed = Number(resolved.passed);
+      if (resolved.passingRate !== "") resolved.passingRate = Number(resolved.passingRate);
+      const cb = { onSuccess: close };
+      editing ? editMut.mutate({ id: editing, ...resolved }, cb) : addMut.mutate(resolved, cb);
+    } catch (err) { alert(err.message); }
+    finally { setUploading(false); }
+  };
+  const saving = uploading || addMut.isPending || editMut.isPending;
 
   return (
-    <Section id="results" icon="📊" title="Board Exam Results">
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <Section id="results" title="Board exam results">
+      <div className="flex flex-col gap-3">
         {results.length === 0 && !showForm && (
-          <div style={{ textAlign: "center", padding: "28px", color: "#94a3b8", fontSize: "13px" }}>
+          <div className="text-center py-7 text-stone-400 text-[13px]">
             No results added yet. Add Std 10 or 12 board results.
           </div>
         )}
 
         {results.map(r => (
-          <div key={r._id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "13px 14px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fafafa" }}>
-            {r.posterImg && (
-              <img src={r.posterImg} alt="poster" style={{ width: "44px", height: "44px", objectFit: "cover", borderRadius: "7px", flexShrink: 0 }} />
+          <div key={r._id} className="flex items-center gap-3 px-3.5 py-3 rounded-md border border-stone-200 bg-stone-50">
+            {r.posterImageUrl && (
+              <img src={r.posterImageUrl} alt="poster" className="w-11 h-11 object-cover rounded-md flex-shrink-0" />
             )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: "600", fontSize: "13px", color: "#0f172a" }}>Std {r.class} · {r.year}</div>
-              <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
-                {r.totalStudents} students · {r.passStudents} passed
-                {r.passRatio != null ? ` · ${r.passRatio}% pass rate` : ""}
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-[13px] text-stone-900">{r.classLabel} · {r.year}</div>
+              <div className="text-xs text-stone-500 mt-0.5">
+                {r.appeared} appeared · {r.passed} passed
+                {r.passingRate != null ? ` · ${r.passingRate}% pass rate` : ""}
               </div>
             </div>
             <button type="button" onClick={() => openEdit(r)}
-              style={{ padding: "5px 12px", borderRadius: "6px", fontSize: "12px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", color: "#475569" }}>
+              className="px-3 py-1 rounded-md text-xs border border-stone-300 bg-white text-stone-600 hover:bg-stone-100">
               Edit
             </button>
             <button type="button" onClick={() => { if (window.confirm("Delete this result?")) delMut.mutate(r._id); }}
-              style={{ padding: "5px 10px", borderRadius: "6px", fontSize: "12px", border: "1px solid #fecaca", background: "#fff", cursor: "pointer", color: "#dc2626" }}>
-              ✕
+              className="px-2.5 py-1 rounded-md text-xs border border-red-200 bg-white text-red-600 hover:bg-red-50">
+              <Icon path={ICONS.x} className="w-3 h-3" />
             </button>
           </div>
         ))}
 
         {showForm && (
           <InlineForm
-            title={editing ? "Edit Result" : "Add Result"}
-            onCancel={close} onSave={save} saving={saving}
-            saveLabel={editing ? "Update Result" : "Add Result"}
+            title={editing ? "Edit result" : "Add result"}
+            onCancel={close} onSave={save} saving={saving} saveDisabled={missingRequired}
+            saveLabel={editing ? "Update result" : "Add result"}
           >
             <Grid>
-              <Input label="Year *" value={form.year} onChange={f("year")} placeholder="2024-25" />
-              <Select label="Class *" value={form.class} onChange={f("class")} options={["10", "12"]} placeholder="Select class" />
+              <Input label="Class *" value={form.classLabel} onChange={f("classLabel")} placeholder="e.g. Std 10" error={!form.classLabel.trim() ? "Required" : null} />
+              <Input label="Year *" value={form.year} onChange={f("year")} type="number" placeholder="2024" error={!String(form.year).trim() ? "Required" : null} />
             </Grid>
             <Grid cols={3}>
-              <Input label="Total Students" value={form.totalStudents} onChange={f("totalStudents")} type="number" placeholder="120" />
-              <Input label="Pass Students" value={form.passStudents} onChange={f("passStudents")} type="number" placeholder="118" />
-              <Input label="Pass %" value={form.passRatio} onChange={f("passRatio")} type="number" placeholder="98.3" hint="Auto-calculated if blank" />
+              <Select label="Board" value={form.board} onChange={f("board")} options={BOARD_OPTIONS} placeholder="Select board" />
+              <Select label="Medium" value={form.medium} onChange={f("medium")} options={MEDIUM_OPTIONS} placeholder="Select medium" />
+              <Select label="Stream" value={form.stream} onChange={f("stream")} options={STREAMS_OPT} placeholder="If Std 12" />
             </Grid>
-            <ImageUpload
-              label="Result Poster (optional)" value={form.posterImg} onChange={f("posterImg")}
-              schoolId={school?._id} type="result" aspectHint="Result poster or photo"
-            />
+            <Grid cols={3}>
+              <Input label="Appeared" value={form.appeared} onChange={f("appeared")} type="number" placeholder="120" />
+              <Input label="Passed" value={form.passed} onChange={f("passed")} type="number" placeholder="118" />
+              <Input label="Pass %" value={form.passingRate} onChange={f("passingRate")} type="number" placeholder="98.3" hint="Auto-calculated if blank" />
+            </Grid>
+            <ImageUpload label="Result poster (optional)" value={form.posterImageUrl} onChange={f("posterImageUrl")} schoolId={school?._id} type="result" aspectHint="Result poster or photo" />
           </InlineForm>
         )}
 
-        {!showForm && <AddBtn onClick={openAdd} label="Add Result" />}
+        {!showForm && <AddBtn onClick={openAdd} label="Add result" />}
       </div>
     </Section>
   );
 }
 
-// ── 8. Achievements ───────────────────────────────────────────
+// ── 10. Achievements ───────────────────────────────────────────
+// FIX: title is required — same guard pattern as Results, plus Number()
+// coercion on year so it's never sent as an empty/typed string.
 
 const BLANK_ACH = { title: "", description: "", imgUrl: "", year: "" };
 
@@ -1025,14 +1097,18 @@ function AchievementsSection({ school, addMut, editMut, delMut }) {
   const f = k => v => setForm(p => ({ ...p, [k]: v }));
   const openAdd = () => { setEditing(null); setForm(BLANK_ACH); setShowForm(true); };
   const openEdit = (a) => { setEditing(a._id); setForm({ title: a.title || "", description: a.description || "", imgUrl: a.imgUrl || "", year: a.year || "" }); setShowForm(true); };
- const close = () => { setShowForm(false); setEditing(null); };
+  const close = () => { setShowForm(false); setEditing(null); };
   const [uploading, setUploading] = useState(false);
+  const missingRequired = !form.title.trim();
+
   const save = async () => {
+    if (missingRequired) return;
     setUploading(true);
     try {
       const resolved = await resolvePendingImages(form, school?._id, [
         { key: "imgUrl", type: "achievement" }
       ]);
+      if (resolved.year !== "") resolved.year = Number(resolved.year);
       const cb = { onSuccess: close };
       editing ? editMut.mutate({ id: editing, ...resolved }, cb) : addMut.mutate(resolved, cb);
     } catch (err) { alert(err.message); }
@@ -1040,64 +1116,60 @@ function AchievementsSection({ school, addMut, editMut, delMut }) {
   };
   const saving = uploading || addMut.isPending || editMut.isPending;
   return (
-    <Section id="achievements" icon="🏆" title="Achievements">
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <Section id="achievements" title="Achievements">
+      <div className="flex flex-col gap-3">
         {list.length === 0 && !showForm && (
-          <div style={{ textAlign: "center", padding: "28px", color: "#94a3b8", fontSize: "13px" }}>
-            No achievements added yet.
-          </div>
+          <div className="text-center py-7 text-stone-400 text-[13px]">No achievements added yet.</div>
         )}
 
         {list.map(a => (
-          <div key={a._id} style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "13px 14px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fafafa" }}>
+          <div key={a._id} className="flex items-start gap-3 px-3.5 py-3 rounded-md border border-stone-200 bg-stone-50">
             {a.imgUrl
-              ? <img src={a.imgUrl} alt={a.title} style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "7px", flexShrink: 0 }} />
-              : <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#fef3c7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>🏆</div>
+              ? <img src={a.imgUrl} alt={a.title} className="w-12 h-12 object-cover rounded-md flex-shrink-0" />
+              : <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0 text-sm font-bold">{(a.title || "?")[0]}</div>
             }
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: "600", fontSize: "13px", color: "#0f172a" }}>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-[13px] text-stone-900">
                 {a.title}{a.year ? ` · ${a.year}` : ""}
               </div>
-              {a.description && <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>{a.description}</div>}
+              {a.description && <div className="text-xs text-stone-500 mt-0.5">{a.description}</div>}
             </div>
             <button type="button" onClick={() => openEdit(a)}
-              style={{ padding: "5px 12px", borderRadius: "6px", fontSize: "12px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", color: "#475569", flexShrink: 0 }}>
+              className="px-3 py-1 rounded-md text-xs border border-stone-300 bg-white text-stone-600 hover:bg-stone-100 flex-shrink-0">
               Edit
             </button>
             <button type="button" onClick={() => { if (window.confirm("Delete this achievement?")) delMut.mutate(a._id); }}
-              style={{ padding: "5px 10px", borderRadius: "6px", fontSize: "12px", border: "1px solid #fecaca", background: "#fff", cursor: "pointer", color: "#dc2626", flexShrink: 0 }}>
-              ✕
+              className="px-2.5 py-1 rounded-md text-xs border border-red-200 bg-white text-red-600 hover:bg-red-50 flex-shrink-0">
+              <Icon path={ICONS.x} className="w-3 h-3" />
             </button>
           </div>
         ))}
 
         {showForm && (
           <InlineForm
-            title={editing ? "Edit Achievement" : "Add Achievement"}
-            onCancel={close} onSave={save} saving={saving}
-            saveLabel={editing ? "Update Achievement" : "Add Achievement"}
+            title={editing ? "Edit achievement" : "Add achievement"}
+            onCancel={close} onSave={save} saving={saving} saveDisabled={missingRequired}
+            saveLabel={editing ? "Update achievement" : "Add achievement"}
           >
             <Grid>
-              <Input label="Title *" value={form.title} onChange={f("title")} placeholder="National Science Olympiad Winner" />
+              <Input label="Title *" value={form.title} onChange={f("title")} placeholder="National Science Olympiad winner" error={!form.title.trim() ? "Required" : null} />
               <Input label="Year" value={form.year} onChange={f("year")} type="number" placeholder="2024" />
             </Grid>
             <Textarea label="Description" value={form.description} onChange={f("description")} placeholder="Brief about the achievement…" rows={2} />
-            <ImageUpload
-              label="Image (optional)" value={form.imgUrl} onChange={f("imgUrl")}
-              schoolId={school?._id} type="achievement" aspectHint="Award photo or certificate"
-            />
+            <ImageUpload label="Image (optional)" value={form.imgUrl} onChange={f("imgUrl")} schoolId={school?._id} type="achievement" aspectHint="Award photo or certificate" />
           </InlineForm>
         )}
 
-        {!showForm && <AddBtn onClick={openAdd} label="Add Achievement" />}
+        {!showForm && <AddBtn onClick={openAdd} label="Add achievement" />}
       </div>
     </Section>
   );
 }
 
-// ── 9. Facility Showcase (school-uploaded) ────────────────────
+// ── 11. Facility Showcase ──────────────────────────────────────
+// FIX: same required-field guard, applied to `label`.
 
-const BLANK_FAC = { title: "", description: "", imgUrl: "" };
+const BLANK_FAC = { label: "", description: "", imageUrl: "" };
 
 function FacilitiesShowcase({ school, addMut, editMut, delMut }) {
   const [uploading, setUploading] = useState(false);
@@ -1108,53 +1180,51 @@ function FacilitiesShowcase({ school, addMut, editMut, delMut }) {
   const list = school?.facilities || [];
   const f = k => v => setForm(p => ({ ...p, [k]: v }));
   const openAdd = () => { setEditing(null); setForm(BLANK_FAC); setShowForm(true); };
-  const openEdit = (item) => { setEditing(item._id); setForm({ title: item.title || "", description: item.description || "", imgUrl: item.imgUrl || "" }); setShowForm(true); };
+  const openEdit = (item) => { setEditing(item._id); setForm({ label: item.label || "", description: item.description || "", imageUrl: item.imageUrl || "" }); setShowForm(true); };
   const close = () => { setShowForm(false); setEditing(null); };
- const save = async () => {
-  setUploading(true);
-  try {
-    const resolved = await resolvePendingImages(form, school?._id, [
-      { key: "imgUrl", type: "facility" }
-    ]);
-    const cb = { onSuccess: close };
-    editing ? editMut.mutate({ id: editing, ...resolved }, cb) : addMut.mutate(resolved, cb);
-  } catch (err) { alert(err.message); }
-  finally { setUploading(false); }
-};
+  const missingRequired = !form.label.trim();
 
-// CHANGE saving line to:
-const saving = uploading || addMut.isPending || editMut.isPending;
-
+  const save = async () => {
+    if (missingRequired) return;
+    setUploading(true);
+    try {
+      const resolved = await resolvePendingImages(form, school?._id, [
+        { key: "imageUrl", type: "facility" }
+      ]);
+      const cb = { onSuccess: close };
+      editing ? editMut.mutate({ id: editing, ...resolved }, cb) : addMut.mutate(resolved, cb);
+    } catch (err) { alert(err.message); }
+    finally { setUploading(false); }
+  };
+  const saving = uploading || addMut.isPending || editMut.isPending;
 
   return (
-    <Section id="facilities" icon="🏗️" title="Facility Showcase">
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <Section id="facilities" title="Facility showcase">
+      <div className="flex flex-col gap-3">
         <Hint>Showcase your school's facilities with photos — library, lab, playground, computer room, etc.</Hint>
 
         {list.length === 0 && !showForm && (
-          <div style={{ textAlign: "center", padding: "24px", color: "#94a3b8", fontSize: "13px" }}>
-            No facilities added yet.
-          </div>
+          <div className="text-center py-6 text-stone-400 text-[13px]">No facilities added yet.</div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {list.map(item => (
-            <div key={item._id} style={{ borderRadius: "10px", border: "1px solid #e2e8f0", overflow: "hidden", background: "#fafafa" }}>
-              {item.imgUrl
-                ? <img src={item.imgUrl} alt={item.title} style={{ width: "100%", height: "120px", objectFit: "cover", display: "block" }} />
-                : <div style={{ height: "80px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px" }}>🏗️</div>
+            <div key={item._id} className="rounded-md border border-stone-200 overflow-hidden bg-stone-50">
+              {item.imageUrl
+                ? <img src={item.imageUrl} alt={item.label} className="w-full h-[120px] object-cover block" />
+                : <div className="h-20 bg-stone-100 flex items-center justify-center text-stone-300"><Icon path={ICONS.school} className="w-6 h-6" /></div>
               }
-              <div style={{ padding: "10px 12px" }}>
-                <div style={{ fontWeight: "600", fontSize: "13px", color: "#0f172a" }}>{item.title}</div>
-                {item.description && <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>{item.description}</div>}
-                <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+              <div className="px-3 py-2.5">
+                <div className="font-semibold text-[13px] text-stone-900">{item.label}</div>
+                {item.description && <div className="text-xs text-stone-500 mt-0.5">{item.description}</div>}
+                <div className="flex gap-1.5 mt-2">
                   <button type="button" onClick={() => openEdit(item)}
-                    style={{ flex: 1, padding: "5px", borderRadius: "6px", fontSize: "12px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer" }}>
+                    className="flex-1 py-1 rounded-md text-xs border border-stone-300 bg-white hover:bg-stone-100">
                     Edit
                   </button>
                   <button type="button" onClick={() => { if (window.confirm("Delete this facility?")) delMut.mutate(item._id); }}
-                    style={{ padding: "5px 10px", borderRadius: "6px", fontSize: "12px", border: "1px solid #fecaca", background: "#fff", cursor: "pointer", color: "#dc2626" }}>
-                    ✕
+                    className="px-2.5 py-1 rounded-md text-xs border border-red-200 bg-white text-red-600 hover:bg-red-50">
+                    <Icon path={ICONS.x} className="w-3 h-3" />
                   </button>
                 </div>
               </div>
@@ -1164,163 +1234,53 @@ const saving = uploading || addMut.isPending || editMut.isPending;
 
         {showForm && (
           <InlineForm
-            title={editing ? "Edit Facility" : "Add Facility"}
-            onCancel={close} onSave={save} saving={saving}
-            saveLabel={editing ? "Update Facility" : "Add Facility"}
+            title={editing ? "Edit facility" : "Add facility"}
+            onCancel={close} onSave={save} saving={saving} saveDisabled={missingRequired}
+            saveLabel={editing ? "Update facility" : "Add facility"}
           >
-            <Input label="Title *" value={form.title} onChange={f("title")} placeholder="e.g. Science Laboratory" />
+            <Input label="Label *" value={form.label} onChange={f("label")} placeholder="e.g. Science laboratory" error={!form.label.trim() ? "Required" : null} />
             <Textarea label="Description" value={form.description} onChange={f("description")} placeholder="Brief description of the facility…" rows={2} />
-            <ImageUpload
-              label="Photo" value={form.imgUrl} onChange={f("imgUrl")}
-              schoolId={school?._id} type="facility" aspectHint="Clear photo of the facility"
-            />
+            <ImageUpload label="Photo" value={form.imageUrl} onChange={f("imageUrl")} schoolId={school?._id} type="facility" aspectHint="Clear photo of the facility" />
           </InlineForm>
         )}
 
-        {!showForm && <AddBtn onClick={openAdd} label="Add Facility" />}
+        {!showForm && <AddBtn onClick={openAdd} label="Add facility" />}
       </div>
     </Section>
   );
 }
 
-// ── 10. UDISE / Infrastructure Data (editable) ────────────────
-
-const BOOL_FIELDS = [
-  { key: "drinkingWater", label: "Drinking Water", icon: "💧" },
-  { key: "electricity", label: "Electricity", icon: "⚡" },
-  { key: "library", label: "Library", icon: "📖" },
-  { key: "playground", label: "Playground", icon: "⚽" },
-  { key: "internet", label: "Internet", icon: "🌐" },
-  { key: "solarPanel", label: "Solar Panel", icon: "☀️" },
-  { key: "ramps", label: "Ramps (PWD)", icon: "♿" },
-  { key: "integratedLab", label: "Science Lab", icon: "🔬" },
-  { key: "medicalCheckup", label: "Medical Checkup", icon: "🏥" },
-];
-
-function UDISEFacilitySection({ school, mutation }) {
-  const fac = school?.facility;
-  const fromSchool = () => ({
-    totalClassrooms: fac?.totalClassrooms ?? "",
-    goodClassrooms: fac?.goodClassrooms ?? "",
-    toiletBoys: fac?.toiletBoys ?? "",
-    toiletGirls: fac?.toiletGirls ?? "",
-    boundaryWall: fac?.boundaryWall || "",
-    drinkingWater: !!fac?.drinkingWater,
-    electricity: !!fac?.electricity,
-    library: !!fac?.library,
-    playground: !!fac?.playground,
-    internet: !!fac?.internet,
-    solarPanel: !!fac?.solarPanel,
-    ramps: !!fac?.ramps,
-    integratedLab: !!fac?.integratedLab,
-    medicalCheckup: !!fac?.medicalCheckup,
-    computers: {
-      desktops: fac?.computers?.desktops ?? "",
-      laptops: fac?.computers?.laptops ?? "",
-      tablets: fac?.computers?.tablets ?? "",
-      projector: fac?.computers?.projector ?? "",
-      printer: fac?.computers?.printer ?? "",
-    },
-  });
-  const [form, setForm] = useState(fromSchool);
-  useEffect(() => setForm(fromSchool()), [school]);
-// REPLACE your dirty line with:
-const dirty = Object.keys(fromSchool()).some(k => {
-  const v = form[k];
-  if (v?._pendingFile) return true;
-  return String(v ?? "") !== String(fromSchool()[k] ?? "");
-});
-  const f = k => v => setForm(p => ({ ...p, [k]: v }));
-  const fc = k => v => setForm(p => ({ ...p, computers: { ...p.computers, [k]: v } }));
-
-  return (
-    <Section id="udise" icon="📋" title="UDISE / Infrastructure Data">
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <Grid>
-          <Input label="Total Classrooms" value={form.totalClassrooms} onChange={f("totalClassrooms")} type="number" placeholder="10" />
-          <Input label="Good Condition Classrooms" value={form.goodClassrooms} onChange={f("goodClassrooms")} type="number" placeholder="9" />
-        </Grid>
-        <Grid>
-          <Input label="Boys Toilets" value={form.toiletBoys} onChange={f("toiletBoys")} type="number" placeholder="2" />
-          <Input label="Girls Toilets" value={form.toiletGirls} onChange={f("toiletGirls")} type="number" placeholder="3" />
-        </Grid>
-        <Input label="Boundary Wall" value={form.boundaryWall} onChange={f("boundaryWall")} placeholder="e.g. Pucca / Kachha / None" />
-
-        <div>
-          <Label>Infrastructure Facilities</Label>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px", marginTop: "8px" }}>
-            {BOOL_FIELDS.map(item => (
-              <div key={item.key} style={{ padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #e2e8f0", background: "#fafafa" }}>
-                <Toggle label={`${item.icon} ${item.label}`} value={form[item.key]} onChange={f(item.key)} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <Label>Computers &amp; Devices</Label>
-          <Grid cols={3} style={{ marginTop: "8px" }}>
-            <Input label="Desktops" value={form.computers.desktops} onChange={fc("desktops")} type="number" placeholder="0" />
-            <Input label="Laptops" value={form.computers.laptops} onChange={fc("laptops")} type="number" placeholder="0" />
-            <Input label="Tablets" value={form.computers.tablets} onChange={fc("tablets")} type="number" placeholder="0" />
-          </Grid>
-          <Grid cols={2} style={{ marginTop: "10px" }}>
-            <Input label="Projectors" value={form.computers.projector} onChange={fc("projector")} type="number" placeholder="0" />
-            <Input label="Printers" value={form.computers.printer} onChange={fc("printer")} type="number" placeholder="0" />
-          </Grid>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={() => mutation.mutate(form)} />
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-// ── 11. Social Links ──────────────────────────────────────────
+// ── 12. Social Links ──────────────────────────────────────────
 
 function SocialSection({ school, mutation }) {
   const fromSchool = () => {
-    const map = {};
-    (school?.socialLinks || []).forEach(l => { map[l.platform] = l.url; });
-    return map;
+    const s = school?.social || {};
+    const out = {};
+    SOCIAL_PLATFORMS.forEach(p => { out[p.key] = s[p.key] || ""; });
+    return out;
   };
-  const [links, setLinks] = useState(fromSchool);
-  useEffect(() => setLinks(fromSchool()), [school]);
-
-  const dirty = JSON.stringify(links) !== JSON.stringify(fromSchool());
-
-  const handleSave = () => {
-    const socialLinks = PLATFORMS
-      .filter(p => links[p]?.trim())
-      .map(p => ({ platform: p, url: links[p].trim() }));
-    mutation.mutate({ socialLinks });
-  };
+  const [form, setForm] = useState(fromSchool);
+  useEffect(() => setForm(fromSchool()), [school]);
+  const dirty = JSON.stringify(form) !== JSON.stringify(fromSchool());
 
   return (
-    <Section id="social" icon="🔗" title="Social Media">
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+    <Section id="social" title="Social media">
+      <div className="flex flex-col gap-2.5">
         <Hint>Add links to your school's social pages. Leave blank to remove.</Hint>
-        {PLATFORMS.map(platform => (
-          <div key={platform} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "18px", width: "24px", textAlign: "center", flexShrink: 0 }}>
-              {PLATFORM_ICONS[platform]}
-            </span>
-            <span style={{ fontSize: "12px", color: "#64748b", width: "80px", flexShrink: 0 }}>{platform}</span>
+        {SOCIAL_PLATFORMS.map(p => (
+          <div key={p.key} className="flex items-center gap-3">
+            <span className="text-xs text-stone-500 w-28 flex-shrink-0">{p.label}</span>
             <input
               type="url"
-              value={links[platform] || ""}
-              onChange={e => setLinks(p => ({ ...p, [platform]: e.target.value }))}
-              placeholder={`${platform} page URL`}
-              style={{ ...inputStyle, fontSize: "12px", padding: "8px 12px", flex: 1 }}
-              onFocus={e => (e.target.style.borderColor = "#6366f1")}
-              onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+              value={form[p.key] || ""}
+              onChange={e => setForm(prev => ({ ...prev, [p.key]: e.target.value }))}
+              placeholder={`${p.label} page URL`}
+              className={`${fieldClass} text-xs py-2 flex-1`}
             />
           </div>
         ))}
-        <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "4px" }}>
-          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={handleSave} />
+        <div className="flex justify-end pt-1">
+          <SaveBtn loading={mutation.isPending} dirty={dirty} onClick={() => mutation.mutate(form)} />
         </div>
       </div>
     </Section>

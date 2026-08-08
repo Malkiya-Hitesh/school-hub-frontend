@@ -147,8 +147,8 @@ export const dashboardApi = {
 
 export const claimApi = {
   // GET /claim/search?last5=xxxxx
-  search: (last5) =>
-    apiFetch(`/claim/search?last5=${last5}`, {
+  search: (last5 , email) =>
+    apiFetch(`/claim/search?last5=${last5}&email=${email}`, {
       method: "GET",
     }),
 
