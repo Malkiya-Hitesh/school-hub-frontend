@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-images: {
+  images: {
     remotePatterns: [
       // for testing with dummy/placeholder images
       {
@@ -11,7 +11,6 @@ images: {
         protocol: "https",
         hostname: "placehold.co",
       },
-     
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
@@ -20,6 +19,15 @@ images: {
   },
   reactCompiler: true,
   allowedDevOrigins: ['192.168.43.52', 'sampling-flatly-scraggly.ngrok-free.dev'],
+
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://schoolhubbackendeight.vercel.app/api/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
