@@ -1,11 +1,15 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const normalizeBaseUrl = (value) => (value || "/api").replace(/\/$/, "");
+const BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL);
 
+const buildUrl = (path) => {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${BASE_URL}${normalizedPath}`;
+};
 
 async function apiFetch(path, options = {}) {
-  const url = `${BASE_URL}${path}`;
+  const url = buildUrl(path);
 
   const config = {
-         // always send/receive cookies
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -13,7 +17,6 @@ async function apiFetch(path, options = {}) {
     ...options,
   };
 
- 
   if (options.body instanceof FormData) {
     delete config.headers["Content-Type"];
   }
@@ -21,13 +24,11 @@ async function apiFetch(path, options = {}) {
   try {
     const res  = await fetch(url, config);
     const data = await res.json();
-   
-    
+
     return { data, status: res.status, ok: res.ok };
   } catch (err) {
     return {
-      data:   { success: false, message: "Network error. Please check your connection.",err },
-
+      data:   { success: false, message: "Network error. Please check your connection.", err },
       status: 0,
       ok:     false,
     };

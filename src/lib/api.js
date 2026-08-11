@@ -4,15 +4,17 @@
 // credentials: "include" always
 // returns { data, error, status }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const normalizeBaseUrl = (value) => (value || "/api").replace(/\/$/, "");
+const BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL);
 
-if (!BASE_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is not defined");
-}
+const buildUrl = (path) => {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${BASE_URL}${normalizedPath}`;
+};
 
 // ─── Core fetcher ─────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
-  const url = `${BASE_URL}${path}`;
+  const url = buildUrl(path);
 
   const config = {
     credentials: "include",
