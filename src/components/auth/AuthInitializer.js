@@ -14,8 +14,19 @@ export default function AuthInitializer() {
   useEffect(() => {
     const run = async () => {
       dispatch(setAuthLoading(true));
-      await hydrateUser(dispatch);
-      dispatch(setAuthLoading(false)); // ← ye missing tha, isi wajah se authLoading stuck rehta tha
+
+      let hydrated = false;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          hydrated = await hydrateUser(dispatch);
+          if (hydrated) break;
+          await new Promise((r) => setTimeout(r, 500 * attempt));
+        } catch (e) {
+          // ignore and retry
+        }
+      }
+
+      dispatch(setAuthLoading(false)); // ensure loading flag cleared even if hydrate fails
     };
 
     run();
