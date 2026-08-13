@@ -47,7 +47,23 @@ function LoginFOrm() {
       // Login response ke bharose direct setUser mat karo —
       // /api/auth/me se full, consistent user object hydrate karo
       // (isi me schoolId, full school linkage etc sab aata hai)
-      await hydrateUser(dispatch);
+      // hydrate user with retries — helps with transient backend/DB cold starts
+      let hydrated = false;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          hydrated = await hydrateUser(dispatch);
+          if (hydrated) break;
+          // wait before next retry
+          await new Promise((r) => setTimeout(r, 1000 * attempt));
+        } catch (e) {
+          // ignore and retry
+        }
+      }
+
+      if (!hydrated) {
+        // fallback: still navigate to dashboard — hydrate may complete on client after navigation
+        console.warn("Auth hydrate failed after retries, navigating anyway");
+      }
 
       router.push("/dashboard");
     } catch {
