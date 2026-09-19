@@ -44,7 +44,7 @@ console.log("school", school);
 
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-4 md:py-6 overflow-x-hidden mt-16">
+    <div className="max-w-5xl mx-auto px-4 py-4 md:py-6 overflow-x-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
         <div className="lg:col-span-2 space-y-4 md:space-y-5 min-w-0">
           <Hero school={hero} />

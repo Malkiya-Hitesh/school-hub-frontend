@@ -111,13 +111,13 @@ console.log(data );
 
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                    Create Student Account
+                    Create your parent account
                 </h1>
                 <p className="text-sm text-slate-500 mt-1.5">
-                    Fill in the details below to create your student account.
+                    Fill in the details below to create your parent account.
                 </p>
-            </div>
-
+            </div>          
+               
 
             {serverError && (
                 <div className="mb-5 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-start gap-2">

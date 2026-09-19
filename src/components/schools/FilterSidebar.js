@@ -21,7 +21,7 @@ function FilterSidebar({ onClose }) {
       <SortSection />
        <NearMeSection />
       <DistrictSection />
-      <GradeSection />
+      {/* <GradeSection /> */}
       <ChipGroupSection title="માધ્યમ" filterKey="medium" options={MEDIUM_OPTIONS} />
       <ChipGroupSection title="બોર્ડ" filterKey="board" options={BOARD_OPTIONS} />
       <ChipGroupSection title="સ્ટ્રીમ" filterKey="streams" options={STREAM_OPTIONS} />

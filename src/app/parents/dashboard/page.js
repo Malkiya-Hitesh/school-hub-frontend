@@ -31,7 +31,7 @@ const clearUserS = useSelector(clearUser)
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 mt-16">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header with Logout */}
         <div className="flex justify-between items-center mb-8">

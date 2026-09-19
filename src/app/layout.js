@@ -20,7 +20,9 @@ export default function RootLayout({ children }) {
       <body className={geist.variable}>
 <Providers >
           <Navbar />
+        <main className="page-top">
           {children}
+        </main>
           <Footer />
           <AuthInitializer/>
      </Providers>

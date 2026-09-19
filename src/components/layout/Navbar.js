@@ -11,9 +11,10 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { label: "હોમ",          href: "/"              },
 
-  { label: "login",   href: "/login"         },
+  { label: "student/parent login",   href: "/login"         },
 
-  { label: "school login",   href: "/auth/login"         },
+  { label: "student registration",   href: "/register/students"         },
+  { label: "parent registration",   href: "/register/parents"         },
 ];
 
 /* ============================================================
@@ -96,7 +97,7 @@ export default function Navbar() {
         {/* ── Desktop CTA ── */}
         <div className="hidden md:flex items-center gap-3">
           <Link
-            href="/schools"
+            href="/auth/login"
             className={cn(
               "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl",
               "text-sm font-semibold",
@@ -117,7 +118,7 @@ export default function Navbar() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
             </svg>
-            શાળા શોધો
+            register school
           </Link>
         </div>
 
@@ -186,7 +187,7 @@ export default function Navbar() {
 
           <div className="mt-2 pt-3 border-t border-[var(--color-border)]">
             <Link
-              href="/schools"
+              href="/auth/register"
               onClick={() => setOpen(false)}
               className={cn(
                 "flex items-center justify-center gap-2 w-full py-3 rounded-xl",
@@ -195,7 +196,7 @@ export default function Navbar() {
                 "transition-colors",
               )}
             >
-              શાળા શોધો
+           register school
             </Link>
           </div>
         </div>
