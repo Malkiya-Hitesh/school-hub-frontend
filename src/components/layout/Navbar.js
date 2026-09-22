@@ -5,200 +5,155 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-/* ============================================================
-   NAV LINKS — Gujarati labels, English routes
-   ============================================================ */
 const NAV_LINKS = [
-  { label: "હોમ",          href: "/"              },
-
-  { label: "student/parent login",   href: "/login"         },
-
-  { label: "student registration",   href: "/register/students"         },
-  { label: "parent registration",   href: "/register/parents"         },
+  { label: "Home", href: "/" },
+  { label: "Find Schools", href: "/schools" },
+  { label: "About", href: "/about" },
+  { label: "contact", href: "/contact" },
 ];
 
-/* ============================================================
-   NAVBAR
-   ============================================================ */
 export default function Navbar() {
-  const pathname   = usePathname();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50",
+        "fixed left-0 right-0 top-0 z-50",
         "h-[var(--navbar-height)]",
-        "bg-[var(--color-bg-surface)]",
         "border-b border-[var(--color-border)]",
-        "shadow-[var(--shadow-sm)]",
+        "bg-[var(--color-bg-surface)]",
+        "shadow-[var(--shadow-sm)]"
       )}
     >
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-10">
-
-        {/* ── Logo ── */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          {/* Icon mark */}
+        <Link href="/" className="flex shrink-0 items-center gap-2.5" onClick={() => setOpen(false)}>
           <span
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-xl",
-              "bg-[var(--color-primary)] text-white",
-              "text-lg font-bold leading-none select-none",
+              "bg-[var(--color-primary)] text-lg font-bold leading-none text-white"
             )}
           >
-            શ
+            S
           </span>
 
           <span className="flex flex-col leading-tight">
-            <span
-              className={cn(
-                "text-base font-bold tracking-tight",
-                "text-[var(--color-text-primary)]",
-              )}
-            >
+            <span className="text-base font-bold tracking-tight text-[var(--color-text-primary)]">
               School Hub
             </span>
             <span className="text-[11px] font-medium text-[var(--color-text-accent)]">
-              ગુજરાત શાળા માહિતી
+              Gujarat school information
             </span>
           </span>
         </Link>
 
-        {/* ── Desktop nav ── */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary navigation">
           {NAV_LINKS.map((link) => {
             const active = pathname === link.href;
+
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "relative px-3.5 py-2 rounded-lg text-sm font-medium transition-all",
+                  "relative rounded-lg px-3.5 py-2 text-sm font-medium transition-all",
                   "duration-[var(--transition-fast)]",
                   active
-                    ? "text-[var(--color-primary)] bg-[var(--color-primary-light)]"
-                    : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-page)]",
+                    ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-page)] hover:text-[var(--color-text-primary)]"
                 )}
               >
                 {link.label}
                 {active && (
-                  <span
-                    className={cn(
-                      "absolute bottom-0 left-1/2 -translate-x-1/2",
-                      "h-0.5 w-4 rounded-full bg-[var(--color-primary)]",
-                    )}
-                  />
+                  <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[var(--color-primary)]" />
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* ── Desktop CTA ── */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden items-center gap-3 md:flex">
           <Link
-            href="/auth/login"
+            href="/login"
+            className="rounded-xl px-3 py-2 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-page)] hover:text-[var(--color-text-primary)]"
+          >
+            Login
+          </Link>
+          <Link
+            href="/claim-school"
             className={cn(
-              "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl",
-              "text-sm font-semibold",
-              "bg-[var(--color-primary)] text-white",
-              "hover:bg-[var(--color-primary-hover)]",
-              "transition-colors duration-[var(--transition-fast)]",
-              "active:scale-[0.98]",
+              "inline-flex items-center gap-1.5 rounded-xl px-4 py-2",
+              "bg-[var(--color-primary)] text-sm font-semibold text-white",
+              "transition-colors duration-[var(--transition-fast)] hover:bg-[var(--color-primary-hover)]",
+              "active:scale-[0.98]"
             )}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            register school
+            Claim school
           </Link>
         </div>
 
-        {/* ── Mobile hamburger ── */}
         <button
-          aria-label="Menu toggle"
+          type="button"
+          aria-label="Toggle navigation menu"
           aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen((value) => !value)}
           className={cn(
-            "md:hidden flex flex-col gap-[5px] p-2 rounded-lg",
+            "flex flex-col gap-[5px] rounded-lg p-2 md:hidden",
             "text-[var(--color-text-secondary)]",
-            "hover:bg-[var(--color-bg-page)] transition-colors",
+            "transition-colors hover:bg-[var(--color-bg-page)]"
           )}
         >
-          <span
-            className={cn(
-              "block h-0.5 w-5 rounded-full bg-current transition-all duration-200",
-              open && "translate-y-[7px] rotate-45",
-            )}
-          />
-          <span
-            className={cn(
-              "block h-0.5 w-5 rounded-full bg-current transition-all duration-200",
-              open && "opacity-0",
-            )}
-          />
-          <span
-            className={cn(
-              "block h-0.5 w-5 rounded-full bg-current transition-all duration-200",
-              open && "-translate-y-[7px] -rotate-45",
-            )}
-          />
+          <span className={cn("block h-0.5 w-5 rounded-full bg-current transition-all duration-200", open && "translate-y-[7px] rotate-45")} />
+          <span className={cn("block h-0.5 w-5 rounded-full bg-current transition-all duration-200", open && "opacity-0")} />
+          <span className={cn("block h-0.5 w-5 rounded-full bg-current transition-all duration-200", open && "-translate-y-[7px] -rotate-45")} />
         </button>
       </div>
 
-      {/* ── Mobile drawer ── */}
       {open && (
         <div
           className={cn(
-            "md:hidden",
-            "absolute top-[var(--navbar-height)] left-0 right-0",
-            "bg-[var(--color-bg-surface)]",
+            "absolute left-0 right-0 top-[var(--navbar-height)] md:hidden",
             "border-b border-[var(--color-border)]",
-            "shadow-[var(--shadow-md)]",
-            "px-4 py-4 flex flex-col gap-1",
+            "bg-[var(--color-bg-surface)] px-4 py-4 shadow-[var(--shadow-md)]"
           )}
         >
-          {NAV_LINKS.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "px-4 py-3 rounded-xl text-sm font-medium transition-all",
-                  active
-                    ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
-                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-page)]",
-                )}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
+          <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
+            {NAV_LINKS.map((link) => {
+              const active = pathname === link.href;
 
-          <div className="mt-2 pt-3 border-t border-[var(--color-border)]">
-            <Link
-              href="/auth/register"
-              onClick={() => setOpen(false)}
-              className={cn(
-                "flex items-center justify-center gap-2 w-full py-3 rounded-xl",
-                "text-sm font-semibold text-white",
-                "bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]",
-                "transition-colors",
-              )}
-            >
-           register school
-            </Link>
-          </div>
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "rounded-xl px-4 py-3 text-sm font-medium transition-all",
+                    active
+                      ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-page)]"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+            <div className="mt-2 grid gap-2 border-t border-[var(--color-border)] pt-3">
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="rounded-xl px-4 py-3 text-center text-sm font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-page)]"
+              >
+                Login
+              </Link>
+              <Link
+                href="/claim-school"
+                onClick={() => setOpen(false)}
+                className="rounded-xl bg-[var(--color-primary)] px-4 py-3 text-center text-sm font-semibold text-white hover:bg-[var(--color-primary-hover)]"
+              >
+                Claim school
+              </Link>
+            </div>
+          </nav>
         </div>
       )}
     </header>
