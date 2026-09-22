@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 // import { selectUser }          from "@/store/slices/userSlice";
@@ -15,7 +16,7 @@ import { useRouter } from "next/navigation";
 
 import { claimApi } from "@/lib/api";
 import { useSelector } from "react-redux";
-import { selectUser } from "../../../store/slices/userSlice";
+import { selectAuthLoading, selectIsLoggedIn, selectUser } from "../../../store/slices/userSlice";
 
 
 // ── Step indicator ────────────────────────────────────────────
@@ -160,7 +161,6 @@ let email = user?.email || "";
     setResult(null);
     try {
       const { data, ok } = await claimApi.search(last5, email);
-      console.log(data);
       
       if ( data.success && data.data) {
         setResult(data.data);
@@ -214,7 +214,7 @@ let email = user?.email || "";
       {/* Search result */}
       {result && (
         result.map((school, index) => (
-        <div style={{
+        <div key={school._id || school.schoolId || index} style={{
           background: "#f0fdf4", border: "1px solid #bbf7d0",
           borderRadius: "12px", padding: "20px",
         }}>
@@ -284,9 +284,6 @@ function Step2({ school, onNext, onBack }) {
       };
 
       const { data, ok } = await claimApi.initiate(payload);
-
-
-      console.log(data.data);
       
       if (ok && data.success) {
         onNext({ ...formData, claimId: data?.data?.claimId });
@@ -458,7 +455,6 @@ function Step4({ school, details, onDone }) {
         claimId: details.claimId || "",
         documents: [],
       });
-      console.log(data.data);
       if (ok && data.success) {
         setSubmitted(true);
         setTimeout(() => onDone(), 2000);
@@ -554,9 +550,17 @@ function Step4({ school, details, onDone }) {
 // ── Main Claim Page ───────────────────────────────────────────
 export default function ClaimPage() {
   const router = useRouter();
+  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const authLoading = useSelector(selectAuthLoading);
   const [step, setStep] = useState(1);
   const [school, setSchool] = useState(null);
   const [details, setDetails] = useState({});
+
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      router.replace("/auth/login");
+    }
+  }, [authLoading, isLoggedIn, router]);
   
 
   const handleFound = (foundSchool) => {
@@ -572,6 +576,73 @@ export default function ClaimPage() {
   const handleOtpNext = () => setStep(4);
 
   const handleDone = () => router.push("/dashboard");
+
+  if (authLoading) {
+    return (
+      <div style={{
+        minHeight: "55vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+      }}>
+        <div style={{ textAlign: "center", color: "#64748b", fontSize: "14px" }}>
+          Checking school login...
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div style={{
+        minHeight: "55vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+      }}>
+        <div style={{
+          maxWidth: "420px",
+          width: "100%",
+          background: "#fff",
+          border: "1px solid #e2e8f0",
+          borderRadius: "16px",
+          padding: "28px",
+          textAlign: "center",
+        }}>
+          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "#0f172a", margin: "0 0 8px" }}>
+            School login required
+          </h1>
+          <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 20px" }}>
+            Please sign in with a school account before claiming a school profile.
+          </p>
+          <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/auth/login" style={{
+              padding: "10px 16px",
+              borderRadius: "10px",
+              background: "#4f46e5",
+              color: "#fff",
+              fontSize: "14px",
+              fontWeight: "600",
+            }}>
+              School login
+            </Link>
+            <Link href="/auth/register" style={{
+              padding: "10px 16px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              color: "#374151",
+              fontSize: "14px",
+              fontWeight: "600",
+            }}>
+              Register school
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
 
